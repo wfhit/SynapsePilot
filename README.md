@@ -1,6 +1,6 @@
 # SynapsePilot
 
-**An advanced autopilot system designed for heterogeneous multi-vehicle coordination and multi-task execution**
+**An advanced autopilot system designed for different vehicle type support and multi-capability execution**
 
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 
@@ -8,17 +8,17 @@
 
 SynapsePilot is a next-generation autopilot system based on [PX4 v1.17.0-alpha1](https://github.com/PX4/PX4-Autopilot), re-architected to provide enhanced capabilities for:
 
-- **Multi-Vehicle Support**: Seamlessly coordinate heterogeneous vehicle fleets including multirotors, fixed-wings, VTOLs, rovers, boats, and submarines
-- **Multi-Task Execution**: Advanced task management enabling vehicles to execute concurrent mission capabilities
-- **Scalable Architecture**: Designed from the ground up to support swarm operations and distributed autonomous systems
+- **Different Vehicle Type Support**: Comprehensive support for various vehicle types including multirotors, fixed-wings, VTOLs, rovers, boats, and submarines
+- **Multi-Capability Execution**: Advanced capability management enabling vehicles to leverage multiple mission capabilities
+- **Flexible Architecture**: Designed to support diverse vehicle configurations and operational modes
 
 ### Key Features
 
-- 🚁 **Heterogeneous Fleet Management**: Control multiple different vehicle types simultaneously
-- 🎯 **Concurrent Task Execution**: Vehicles can perform multiple mission objectives in parallel
-- 🔗 **Enhanced Communication**: Improved inter-vehicle communication protocols
-- 📊 **Distributed Intelligence**: Support for distributed decision-making across vehicle networks
-- 🛡️ **Robust Safety**: Built-in redundancy and failsafe mechanisms for multi-vehicle operations
+- 🚁 **Diverse Vehicle Type Support**: Comprehensive support for different vehicle platforms and configurations
+- 🎯 **Multi-Capability Execution**: Vehicles can utilize multiple mission capabilities simultaneously
+- 🔗 **Enhanced Communication**: Improved communication protocols and message handling
+- 📊 **Intelligent Systems**: Advanced decision-making and autonomous operation support
+- 🛡️ **Robust Safety**: Built-in redundancy and failsafe mechanisms for reliable operations
 
 ## Based on PX4
 
@@ -60,11 +60,11 @@ make px4_sitl_default
 
 SynapsePilot introduces several architectural improvements:
 
-1. **Vehicle Instance Management**: Enhanced support for managing multiple vehicle instances
-2. **Task Scheduler**: Advanced task scheduling for concurrent mission execution
-3. **Fleet Coordinator**: Centralized and distributed coordination modes
-4. **Communication Layer**: Optimized message passing for multi-vehicle scenarios
-5. **Resource Allocation**: Dynamic resource management across vehicle fleets
+1. **Vehicle Platform Support**: Enhanced support for different vehicle types and configurations
+2. **Capability Scheduler**: Advanced capability scheduling for concurrent mission execution
+3. **System Integration**: Improved integration between vehicle subsystems and capabilities
+4. **Communication Layer**: Optimized message passing and data handling
+5. **Resource Management**: Dynamic resource allocation for vehicle operations
 
 ## Contributing
 
@@ -76,12 +76,12 @@ We welcome contributions! SynapsePilot follows the same contribution guidelines 
 
 ## Development Roadmap
 
-- [ ] Enhanced multi-vehicle simulation environment
-- [ ] Advanced swarm behaviors library
-- [ ] Distributed path planning algorithms
-- [ ] Vehicle-to-vehicle communication protocols
-- [ ] Fleet management web interface
-- [ ] Multi-vehicle mission planner
+- [ ] Enhanced simulation environment for different vehicle types
+- [ ] Advanced capability management system
+- [ ] Improved path planning algorithms
+- [ ] Enhanced communication protocols
+- [ ] Vehicle configuration and monitoring interface
+- [ ] Multi-capability mission planner
 
 ## License
 
@@ -103,4 +103,4 @@ This project builds upon the excellent work of the PX4 Development Team and the 
 
 ---
 
-*SynapsePilot - Coordinated Autonomy for the Next Generation of Autonomous Systems*
+*SynapsePilot - Versatile Autonomy for Diverse Vehicle Platforms*
