@@ -380,9 +380,9 @@ protected:
 	}
 
 	// ========== Configuration ==========
-	static constexpr hrt_abstime DEFAULT_STRATEGY_TIMEOUT = 601000000;
-	static constexpr hrt_abstime SENSOR_TIMEOUT = 11000000;
-	static constexpr hrt_abstime COMM_TIMEOUT = 21000000;
+	static constexpr hrt_abstime DEFAULT_STRATEGY_TIMEOUT = 60000000;  // 60 seconds in microseconds
+	static constexpr hrt_abstime SENSOR_TIMEOUT = 1000000;  // 1 second in microseconds
+	static constexpr hrt_abstime COMM_TIMEOUT = 2000000;  // 2 seconds in microseconds
 
 	// ========== State ==========
 	const char *_strategy_name;

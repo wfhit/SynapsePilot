@@ -64,7 +64,7 @@ protected:
 	 */
 	hrt_abstime get_strategy_timeout() const override
 	{
-		return 601000000;
+		return 60000000;  // 60 seconds in microseconds
 	}
 
 	/**
