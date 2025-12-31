@@ -2,9 +2,9 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "jlink (px4_fmu-v6x)",
+            "name": "jlink (px4_fmu-v6xrt)",
             "gdbPath": "/usr/bin/gdb-multiarch",
-            "device": "STM32H753II",
+            "device": "MIMXRT1176DVMAA",
             "svdFile": "",
             "rtos": "/home/runner/work/SynapsePilot/SynapsePilot/platforms/nuttx/NuttX/nuttx/tools/jlink-nuttx.so",
             "executable": "${command:cmake.launchTargetPath}",
@@ -24,9 +24,9 @@
             ]
         },
         {
-            "name": "stlink (px4_fmu-v6x)",
+            "name": "stlink (px4_fmu-v6xrt)",
             "gdbPath": "/usr/bin/gdb-multiarch",
-            "device": "STM32H753II",
+            "device": "MIMXRT1176DVMAA",
             "svdFile": "",
             "executable": "${command:cmake.launchTargetPath}",
             "request": "launch",
@@ -43,9 +43,9 @@
             ]
         },
         {
-            "name": "blackmagic (px4_fmu-v6x)",
+            "name": "blackmagic (px4_fmu-v6xrt)",
             "gdbPath": "/usr/bin/gdb-multiarch",
-            "device": "STM32H753II",
+            "device": "MIMXRT1176DVMAA",
             "svdFile": "",
             "executable": "${command:cmake.launchTargetPath}",
             "request": "launch",

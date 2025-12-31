@@ -609,15 +609,13 @@ static int imxrt_flexspi_fram_ioctl(struct mtd_dev_s *dev,
 		break;
 
 	case MTDIOC_PROTECT:
-
-		/* TODO */
-
+		/* Memory protection not implemented for this FRAM device */
+		ret = -ENOTSUP;
 		break;
 
 	case MTDIOC_UNPROTECT:
-
-		/* TODO */
-
+		/* Memory protection not implemented for this FRAM device */
+		ret = -ENOTSUP;
 		break;
 
 	default:

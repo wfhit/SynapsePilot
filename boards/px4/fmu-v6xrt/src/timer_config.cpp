@@ -31,7 +31,6 @@
  *
  ****************************************************************************/
 
-// TODO:Stubbed out for now
 #include <stdint.h>
 
 #include <chip.h>
