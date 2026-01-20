@@ -32,41 +32,44 @@
  ****************************************************************************/
 
 /**
- * @file wheel_loader_safety_stop_mode.hpp
+ * @file wheel_loader_loiter_mode.hpp
  *
- * Wheel loader safety stop mode - immediate stop of all actuators.
+ * Wheel loader loiter mode - passive hold with zero velocities.
  *
- * This mode provides an immediate hard stop by commanding zero velocities
- * to all actuators. It does not require sensor feedback and can activate
- * even during sensor failures.
- * - Immediate stop: zero velocities to all actuators
- * - No sensor requirements: can activate blindly
- * - Normal mode priority: activated via mode command
- * - Exit handling: managed by mode manager
+ * This mode provides a passive hold by commanding zero velocities/rates
+ * to all actuators. It does not actively correct for position drift.
+ * - Passive operational pause (no position correction)
+ * - Simply commands zero velocities to all actuators
+ * - Relies on lower-level controllers and mechanical friction
+ * - Allows natural drift without correction
+ * - Requires sensor validity for safe operation
  * - Runs at 20Hz
  *
  * Use cases:
- * - Emergency stop command from operator
- * - Safe state during system transitions
- * - Default stop mode before switching operations
+ * - Temporary pause where drift is acceptable
+ * - Situations where active control is not needed
+ * - Lower energy consumption than active hold mode
  *
  * @author PX4 Development Team
  */
 
 #pragma once
 
-#include "../../../operation_mode_base.hpp"
+#include "../../operation_mode_base.hpp"
 
+#include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
+#include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/chassis_setpoint.h>
 #include <uORB/topics/boom_setpoint.h>
 #include <uORB/topics/tilt_setpoint.h>
 
-class WheelLoaderSafetyStopMode : public OperationModeBase
+class LoiterMode : public OperationModeBase
 {
 public:
-	WheelLoaderSafetyStopMode(ModuleParams *parent);
-	~WheelLoaderSafetyStopMode() override = default;
+	LoiterMode(ModuleParams *parent);
+	~LoiterMode() override = default;
 
 	bool activate() override;
 	void deactivate() override;
@@ -74,13 +77,32 @@ public:
 	bool is_valid() const override;
 
 private:
+	// Control parameters
+	struct LoiterParams {
+		bool enable_chassis{true};
+		bool enable_boom{true};
+		bool enable_tilt{true};
+		bool enable_articulation{true};
+	};
+
+	// Subscriptions
+	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
+	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
+
 	// Publications
 	uORB::Publication<chassis_setpoint_s> _chassis_setpoint_pub{ORB_ID(chassis_setpoint)};
 	uORB::Publication<boom_setpoint_s> _boom_setpoint_pub{ORB_ID(boom_setpoint)};
 	uORB::Publication<tilt_setpoint_s> _tilt_setpoint_pub{ORB_ID(tilt_setpoint)};
 
+	// State
+	vehicle_local_position_s _vehicle_local_position{};
+	vehicle_attitude_s _vehicle_attitude{};
+
+	LoiterParams _loiter_params{};
+
 	// Methods
-	void publishStopSetpoints();
+	void publishZeroSetpoints();
+	void loadParameters();
 
 	static constexpr float UPDATE_RATE = 20.0f;  // 20 Hz
 	static constexpr float UPDATE_DT = 1.0f / UPDATE_RATE;

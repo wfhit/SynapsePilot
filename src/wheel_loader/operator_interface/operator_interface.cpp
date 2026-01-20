@@ -206,8 +206,12 @@ void OperatorInterface::process_mavlink_commands()
 			}
 
 		case vehicle_command_s::VEHICLE_CMD_PREFLIGHT_CALIBRATION: {
-				// TODO: Calibration tasks need redesign after task_executor removal
-				result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_UNSUPPORTED;
+				// Switch to calibration mode for calibration operations
+				send_mode_command(operation_mode_cmd_s::MODE_WL_CALIBRATION, operation_mode_cmd_s::SOURCE_GCS);
+				_command_status.last_command_type = command_status_s::LAST_CMD_MODE_CHANGE;
+				_command_status.last_command_timestamp = hrt_absolute_time();
+				result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+				_mavlink_cmd_accepted++;
 				handled = true;
 				break;
 			}
@@ -332,11 +336,11 @@ void OperatorInterface::process_rc_inputs()
 
 	// Process task trigger (on rising edge)
 	if (rc_task != _prev_rc_task_trigger && rc_task > 0) {
-		uint8_t task_id = map_rc_task(rc_task);
+		uint8_t operation_mode = map_rc_task(rc_task);
 
-		if (task_id > 0) {
-			// send_task_command(task_id, task_executor_cmd_s::ACTION_START, task_executor_cmd_s::SOURCE_RC);
-			// TODO: Task executor commands need redesign
+		if (operation_mode != 0xFF) {
+			// Send mode command to switch to task-specific operation mode
+			send_mode_command(operation_mode, operation_mode_cmd_s::SOURCE_RC);
 			_command_status.last_command_type = command_status_s::LAST_CMD_TASK_START;
 			_command_status.last_command_timestamp = hrt_absolute_time();
 			_rc_cmd_count++;
@@ -373,9 +377,36 @@ void OperatorInterface::send_mode_command(uint8_t mode, uint8_t source)
 
 void OperatorInterface::send_task_command(uint8_t task_id, uint8_t action, uint8_t source)
 {
-	// TODO: Redesign task execution - removed task_executor module
-	// Tasks should be integrated into operation modes or handled differently
-	PX4_WARN("Task command %d not implemented - task_executor removed", task_id);
+	// Tasks are now handled through operation modes
+	// Convert task_id to appropriate operation mode
+	uint8_t operation_mode = 0xFF;
+	
+	switch (task_id) {
+	case 1: // Load material task
+	case 2: // Dump material task
+	case 3: // Travel to point task
+		operation_mode = operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER;
+		break;
+	case 4: // Emergency stop
+		operation_mode = operation_mode_cmd_s::MODE_WL_SAFETY_STOP;
+		break;
+	case 5: // Steering calibration
+	case 6: // Encoder calibration
+	case 7: // Actuator calibration
+		operation_mode = operation_mode_cmd_s::MODE_WL_CALIBRATION;
+		break;
+	default:
+		PX4_WARN("Unknown task_id: %d", task_id);
+		return;
+	}
+	
+	if (action == 1) { // START action
+		send_mode_command(operation_mode, source);
+		PX4_INFO("Task %d started via mode %d", task_id, operation_mode);
+	} else { // STOP action - return to hold mode
+		send_mode_command(operation_mode_cmd_s::MODE_WL_HOLD, source);
+		PX4_INFO("Task %d stopped, returning to hold mode", task_id);
+	}
 }
 
 void OperatorInterface::send_safety_ack_command()
@@ -439,20 +470,22 @@ uint8_t OperatorInterface::map_rc_mode(uint8_t rc_value)
 
 uint8_t OperatorInterface::map_rc_task(uint8_t rc_value)
 {
-	// Map RC trigger position (1-7) to task ID
-	// TODO: Define task_executor_cmd message
-	(void)rc_value;  // Unused until task message is defined
-	return 0;
-	// switch (rc_value) {
-	// case 1: return task_executor_cmd_s::TASK_LOAD_MATERIAL;
-	// case 2: return task_executor_cmd_s::TASK_DUMP_MATERIAL;
-	// case 3: return task_executor_cmd_s::TASK_TRAVEL_TO_POINT;
-	// case 4: return task_executor_cmd_s::TASK_EMERGENCY_STOP;
-	// case 5: return task_executor_cmd_s::TASK_STEERING_CALIBRATION;
-	// case 6: return task_executor_cmd_s::TASK_ENCODER_CALIBRATION;
-	// case 7: return task_executor_cmd_s::TASK_ACTUATOR_CALIBRATION;
-	// default: return 0;
-	// }
+	// Map RC trigger position (1-7) to operation mode
+	// Tasks are now integrated into operation modes
+	switch (rc_value) {
+	case 1: // Load material
+	case 2: // Dump material  
+	case 3: // Travel to point
+		return operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER;
+	case 4: // Emergency stop
+		return operation_mode_cmd_s::MODE_WL_SAFETY_STOP;
+	case 5: // Steering calibration
+	case 6: // Encoder calibration
+	case 7: // Actuator calibration
+		return operation_mode_cmd_s::MODE_WL_CALIBRATION;
+	default:
+		return 0xFF; // Invalid
+	}
 }
 
 int OperatorInterface::task_spawn(int argc, char *argv[])

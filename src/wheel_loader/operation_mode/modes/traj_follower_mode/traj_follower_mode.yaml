@@ -234,7 +234,7 @@ parameters:
         default: 2.0
         min: 0.1
         max: 20.0
-        unit: rad/s^3
+        unit: rad/s^2
         decimal: 1
 
   - group: Wheel Loader MPC

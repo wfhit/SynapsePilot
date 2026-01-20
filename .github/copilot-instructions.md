@@ -200,6 +200,10 @@ Parameters use `SNAKE_CASE` with category prefixes:
 
 Defined in `module.yaml` files within modules.
 
+**Important Constraints**:
+- **Parameter name length limit**: Maximum 16 characters (enforced by PX4 parameter system)
+- **Units must be valid**: Use standard SI units or recognized abbreviations (e.g., `m/s`, `rad`, `deg`, `m/s^2`, `N`, `%`, `ms`, `s`). Invalid units will cause build or runtime errors.
+
 ### Shell Commands
 
 Modules with `MAIN <name>` create shell commands. Access via:

@@ -164,8 +164,6 @@ private:
 	uORB::Publication<command_status_s> _command_status_pub{ORB_ID(command_status)};
 	uORB::Publication<arm_cmd_s> _arm_cmd_pub{ORB_ID(arm_cmd)};
 	uORB::Publication<operation_mode_cmd_s> _operation_mode_cmd_pub{ORB_ID(operation_mode_cmd)};
-	// TODO: Removed task_executor - redesign needed
-	// uORB::Publication<task_executor_cmd_s> _task_executor_cmd_pub{ORB_ID(task_executor_cmd)};
 	uORB::Publication<safety_ack_cmd_s> _safety_ack_cmd_pub{ORB_ID(safety_ack_cmd)};
 	uORB::Publication<safety_input_s> _safety_input_pub{ORB_ID(safety_input)};
 

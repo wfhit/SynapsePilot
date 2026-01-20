@@ -53,12 +53,12 @@
 #include <uORB/topics/vehicle_status.h>
 
 #include "operation_mode_base.hpp"
-#include "modes/wheel_loader/wl_traj_follower_mode/wl_traj_follower_mode.hpp"
-#include "modes/wheel_loader/wl_manual_bucket_mode/wl_manual_bucket_mode.hpp"
-#include "modes/wheel_loader/wl_manual_direct_mode/wl_manual_direct_mode.hpp"
-#include "modes/wheel_loader/wl_hold_mode/wl_hold_mode.hpp"
-#include "modes/wheel_loader/wl_loiter_mode/wl_loiter_mode.hpp"
-#include "modes/wheel_loader/wl_safety_stop_mode/wl_safety_stop_mode.hpp"
+#include "modes/traj_follower_mode/traj_follower_mode.hpp"
+#include "modes/manual_bucket_mode/manual_bucket_mode.hpp"
+#include "modes/manual_direct_mode/manual_direct_mode.hpp"
+#include "modes/hold_mode/hold_mode.hpp"
+#include "modes/loiter_mode/loiter_mode.hpp"
+#include "modes/safety_stop_mode/safety_stop_mode.hpp"
 
 class OperationModeManager : public ModuleBase<OperationModeManager>, public ModuleParams,
 	public px4::ScheduledWorkItem
@@ -118,12 +118,12 @@ private:
 	uORB::Publication<operation_mode_status_s> _operation_mode_status_pub{ORB_ID(operation_mode_status)};
 
 	// Mode instances
-	WheelLoaderTrajFollowerMode _wheel_loader_traj_follower_mode{this};
-	WheelLoaderManualBucketMode _wheel_loader_manual_bucket_mode{this};
-	WheelLoaderManualDirectMode _wheel_loader_manual_direct_mode{this};
-	WheelLoaderHoldMode _wheel_loader_hold_mode{this};
-	WheelLoaderLoiterMode _wheel_loader_loiter_mode{this};
-	WheelLoaderSafetyStopMode _wheel_loader_safety_stop_mode{this};
+	TrajFollowerMode _traj_follower_mode{this};
+	ManualBucketMode _manual_bucket_mode{this};
+	ManualDirectMode _manual_direct_mode{this};
+	HoldMode _hold_mode{this};
+	LoiterMode _loiter_mode{this};
+	SafetyStopMode _safety_stop_mode{this};
 
 	// Current active mode pointer
 	OperationModeBase *_current_mode{nullptr};

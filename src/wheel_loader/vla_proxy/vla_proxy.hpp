@@ -199,8 +199,8 @@ private:
 	size_t _waypoint_buffer_count{0};
 
 	// Timing constants
-	static constexpr unsigned SCHEDULE_INTERVAL = 20000;  // 50Hz update rate
-	static constexpr uint32_t PACKET_TIMEOUT_MS = 10;
+	static constexpr unsigned SCHEDULE_INTERVAL = 50000;  // 20Hz update rate
+	static constexpr uint32_t PACKET_TIMEOUT_MS = 500;  // 500ms timeout (3KB at 115200 baud = 267ms)
 	static constexpr uint32_t STATUS_SEND_INTERVAL_MS = 50;  // Send status at 20Hz
 	static constexpr uint32_t CONNECTION_CHECK_INTERVAL_MS = 1000;  // Check connection every 1s
 

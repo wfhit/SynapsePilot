@@ -48,7 +48,7 @@
 
 #pragma once
 
-#include "../../../operation_mode_base.hpp"
+#include "../../operation_mode_base.hpp"
 
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
@@ -61,11 +61,11 @@
 #include <matrix/matrix/math.hpp>
 #include <mathlib/mathlib.h>
 
-class WheelLoaderManualDirectMode : public OperationModeBase
+class ManualDirectMode : public OperationModeBase
 {
 public:
-	WheelLoaderManualDirectMode(ModuleParams *parent);
-	~WheelLoaderManualDirectMode() override = default;
+	ManualDirectMode(ModuleParams *parent);
+	~ManualDirectMode() override = default;
 
 	bool activate() override;
 	void deactivate() override;

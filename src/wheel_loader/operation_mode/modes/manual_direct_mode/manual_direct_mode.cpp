@@ -31,17 +31,17 @@
  *
  ****************************************************************************/
 
-#include "wl_manual_direct_mode.hpp"
+#include "manual_direct_mode.hpp"
 #include <px4_platform_common/log.h>
 
-WheelLoaderManualDirectMode::WheelLoaderManualDirectMode(ModuleParams *parent) :
+ManualDirectMode::ManualDirectMode(ModuleParams *parent) :
 	OperationModeBase(parent, "WheelLoaderManualDirect")
 {
 	// Load vehicle parameters
 	loadVehicleParameters();
 }
 
-bool WheelLoaderManualDirectMode::activate()
+bool ManualDirectMode::activate()
 {
 	PX4_INFO("Activating Wheel Loader Manual Direct Mode");
 
@@ -84,13 +84,13 @@ bool WheelLoaderManualDirectMode::activate()
 	return true;
 }
 
-void WheelLoaderManualDirectMode::deactivate()
+void ManualDirectMode::deactivate()
 {
 	PX4_INFO("Deactivating Wheel Loader Manual Direct Mode");
 	set_active(false);
 }
 
-void WheelLoaderManualDirectMode::update(float dt)
+void ManualDirectMode::update(float dt)
 {
 	// Update sensor data
 	updateCurrentState();
@@ -117,7 +117,7 @@ void WheelLoaderManualDirectMode::update(float dt)
 	publish_control_config(config);
 }
 
-bool WheelLoaderManualDirectMode::is_valid() const
+bool ManualDirectMode::is_valid() const
 {
 	bool position_valid = _vehicle_local_position.xy_valid && _vehicle_local_position.z_valid &&
 			      (hrt_elapsed_time(&_vehicle_local_position.timestamp) < 500000);  // 500ms in microseconds
@@ -129,7 +129,7 @@ bool WheelLoaderManualDirectMode::is_valid() const
 	return position_valid && attitude_valid && rc_valid;
 }
 
-void WheelLoaderManualDirectMode::processRCInputs(float dt)
+void ManualDirectMode::processRCInputs(float dt)
 {
 	// Update RC data
 	_manual_control_setpoint_sub.update(&_manual_control_setpoint);
@@ -157,7 +157,7 @@ void WheelLoaderManualDirectMode::processRCInputs(float dt)
 		  (double)_articulation_rate, (double)_tilt_rate);
 }
 
-float WheelLoaderManualDirectMode::applyDeadband(float input, float deadband)
+float ManualDirectMode::applyDeadband(float input, float deadband)
 {
 	if (fabsf(input) < deadband) {
 		return 0.0f;
@@ -168,7 +168,7 @@ float WheelLoaderManualDirectMode::applyDeadband(float input, float deadband)
 	return sign * (fabsf(input) - deadband) / (1.0f - deadband);
 }
 
-void WheelLoaderManualDirectMode::updateTargetStates(float dt)
+void ManualDirectMode::updateTargetStates(float dt)
 {
 	// Integrate rates to get target states
 	_target_boom_position += _boom_velocity * dt;
@@ -176,7 +176,7 @@ void WheelLoaderManualDirectMode::updateTargetStates(float dt)
 	_target_tilt_angle += _tilt_rate * dt;
 }
 
-void WheelLoaderManualDirectMode::applyLimits()
+void ManualDirectMode::applyLimits()
 {
 	// Clamp boom position
 	_target_boom_position = math::constrain(_target_boom_position,
@@ -194,7 +194,7 @@ void WheelLoaderManualDirectMode::applyLimits()
 					     _vehicle_params.tilt_max);
 }
 
-void WheelLoaderManualDirectMode::publishSetpoints()
+void ManualDirectMode::publishSetpoints()
 {
 	hrt_abstime now = hrt_absolute_time();
 
@@ -243,7 +243,7 @@ void WheelLoaderManualDirectMode::publishSetpoints()
 		  (double)_target_tilt_angle, (double)_tilt_rate);
 }
 
-void WheelLoaderManualDirectMode::updateCurrentState()
+void ManualDirectMode::updateCurrentState()
 {
 	// Update subscriptions
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
@@ -256,7 +256,7 @@ void WheelLoaderManualDirectMode::updateCurrentState()
 	_current_tilt_angle = _target_tilt_angle;
 }
 
-void WheelLoaderManualDirectMode::loadVehicleParameters()
+void ManualDirectMode::loadVehicleParameters()
 {
 	// TODO: Load from YAML or PX4 parameters
 	// Using defaults for now
@@ -275,7 +275,7 @@ void WheelLoaderManualDirectMode::loadVehicleParameters()
 	_control_params.max_tilt_rate = 0.5f;
 }
 
-void WheelLoaderManualDirectMode::initializeTargetStates()
+void ManualDirectMode::initializeTargetStates()
 {
 	// Initialize from current state (or defaults if sensors not available)
 	// TODO: Get actual positions from sensors

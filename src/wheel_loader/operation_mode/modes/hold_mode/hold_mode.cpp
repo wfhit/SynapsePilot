@@ -31,16 +31,16 @@
  *
  ****************************************************************************/
 
-#include "wl_hold_mode.hpp"
+#include "hold_mode.hpp"
 #include <px4_platform_common/log.h>
 
-WheelLoaderHoldMode::WheelLoaderHoldMode(ModuleParams *parent) :
+HoldMode::HoldMode(ModuleParams *parent) :
 	OperationModeBase(parent, "WheelLoaderHold")
 {
 	loadParameters();
 }
 
-bool WheelLoaderHoldMode::activate()
+bool HoldMode::activate()
 {
 	PX4_INFO("Activating Wheel Loader Hold Mode");
 
@@ -91,13 +91,13 @@ bool WheelLoaderHoldMode::activate()
 	return true;
 }
 
-void WheelLoaderHoldMode::deactivate()
+void HoldMode::deactivate()
 {
 	PX4_INFO("Deactivating Wheel Loader Hold Mode");
 	set_active(false);
 }
 
-void WheelLoaderHoldMode::update(float dt)
+void HoldMode::update(float dt)
 {
 	// Update current state from sensors
 	updateCurrentState();
@@ -115,7 +115,7 @@ void WheelLoaderHoldMode::update(float dt)
 	publish_control_config(config);
 }
 
-bool WheelLoaderHoldMode::is_valid() const
+bool HoldMode::is_valid() const
 {
 	bool position_valid = _vehicle_local_position.xy_valid && _vehicle_local_position.z_valid &&
 			      (hrt_elapsed_time(&_vehicle_local_position.timestamp) < 500000);
@@ -125,7 +125,7 @@ bool WheelLoaderHoldMode::is_valid() const
 	return position_valid && attitude_valid && _hold_state.valid;
 }
 
-bool WheelLoaderHoldMode::captureCurrentState()
+bool HoldMode::captureCurrentState()
 {
 	// Update subscriptions
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
@@ -156,7 +156,7 @@ bool WheelLoaderHoldMode::captureCurrentState()
 	return true;
 }
 
-void WheelLoaderHoldMode::updateCurrentState()
+void HoldMode::updateCurrentState()
 {
 	// Update subscriptions
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
@@ -179,7 +179,7 @@ void WheelLoaderHoldMode::updateCurrentState()
 	_current_state.valid = true;
 }
 
-void WheelLoaderHoldMode::computeAndPublishSetpoints()
+void HoldMode::computeAndPublishSetpoints()
 {
 	hrt_abstime now = hrt_absolute_time();
 
@@ -268,7 +268,7 @@ void WheelLoaderHoldMode::computeAndPublishSetpoints()
 		  (double)boom_error, (double)tilt_error, (double)articulation_error);
 }
 
-void WheelLoaderHoldMode::loadParameters()
+void HoldMode::loadParameters()
 {
 	// TODO: Load from YAML or PX4 parameters
 	// Using defaults for now

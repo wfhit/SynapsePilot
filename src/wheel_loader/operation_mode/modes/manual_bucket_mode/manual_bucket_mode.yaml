@@ -135,7 +135,7 @@ parameters:
         unit: rad
         decimal: 2
 
-      WLMB_BUCKET_X_MIN:
+      WLMB_BUCKET_XMIN:
         description:
           short: Minimum bucket X
           long: Minimum bucket X position relative to chassis
@@ -146,7 +146,7 @@ parameters:
         unit: m
         decimal: 2
 
-      WLMB_BUCKET_X_MAX:
+      WLMB_BUCKET_XMAX:
         description:
           short: Maximum bucket X
           long: Maximum bucket X position relative to chassis
@@ -157,7 +157,7 @@ parameters:
         unit: m
         decimal: 2
 
-      WLMB_BUCKET_Z_MIN:
+      WLMB_BUCKET_ZMIN:
         description:
           short: Minimum bucket Z
           long: Minimum bucket height above ground
@@ -168,7 +168,7 @@ parameters:
         unit: m
         decimal: 2
 
-      WLMB_BUCKET_Z_MAX:
+      WLMB_BUCKET_ZMAX:
         description:
           short: Maximum bucket Z
           long: Maximum bucket height above ground

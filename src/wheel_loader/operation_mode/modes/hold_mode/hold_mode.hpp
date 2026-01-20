@@ -50,7 +50,7 @@
 
 #pragma once
 
-#include "../../../operation_mode_base.hpp"
+#include "../../operation_mode_base.hpp"
 
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
@@ -63,11 +63,11 @@
 #include <matrix/matrix/math.hpp>
 #include <mathlib/mathlib.h>
 
-class WheelLoaderHoldMode : public OperationModeBase
+class HoldMode : public OperationModeBase
 {
 public:
-	WheelLoaderHoldMode(ModuleParams *parent);
-	~WheelLoaderHoldMode() override = default;
+	HoldMode(ModuleParams *parent);
+	~HoldMode() override = default;
 
 	bool activate() override;
 	void deactivate() override;

@@ -40,7 +40,7 @@ OperationModeManager::OperationModeManager() :
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers)
 {
 	// Initialize with wheel loader trajectory follower mode as default
-	_current_mode = &_wheel_loader_traj_follower_mode;
+	_current_mode = &_traj_follower_mode;
 	_current_mode_id = operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER;
 }
 
@@ -116,27 +116,27 @@ bool OperationModeManager::switch_to_mode(uint8_t target_mode)
 	// Select the target mode
 	switch (target_mode) {
 	case operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER:
-		new_mode = &_wheel_loader_traj_follower_mode;
+		new_mode = &_traj_follower_mode;
 		break;
 
 	case operation_mode_cmd_s::MODE_WL_MANUAL_BUCKET:
-		new_mode = &_wheel_loader_manual_bucket_mode;
+		new_mode = &_manual_bucket_mode;
 		break;
 
 	case operation_mode_cmd_s::MODE_WL_MANUAL_DIRECT:
-		new_mode = &_wheel_loader_manual_direct_mode;
+		new_mode = &_manual_direct_mode;
 		break;
 
 	case operation_mode_cmd_s::MODE_WL_HOLD:
-		new_mode = &_wheel_loader_hold_mode;
+		new_mode = &_hold_mode;
 		break;
 
 	case operation_mode_cmd_s::MODE_WL_LOITER:
-		new_mode = &_wheel_loader_loiter_mode;
+		new_mode = &_loiter_mode;
 		break;
 
 	case operation_mode_cmd_s::MODE_WL_SAFETY_STOP:
-		new_mode = &_wheel_loader_safety_stop_mode;
+		new_mode = &_safety_stop_mode;
 		break;
 
 	default:

@@ -44,7 +44,7 @@
 
 #pragma once
 
-#include "../../../operation_mode_base.hpp"
+#include "../../operation_mode_base.hpp"
 
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
@@ -57,11 +57,11 @@
 #include <matrix/matrix/math.hpp>
 #include <mathlib/mathlib.h>
 
-class WheelLoaderManualBucketMode : public OperationModeBase
+class ManualBucketMode : public OperationModeBase
 {
 public:
-	WheelLoaderManualBucketMode(ModuleParams *parent);
-	~WheelLoaderManualBucketMode() override = default;
+	ManualBucketMode(ModuleParams *parent);
+	~ManualBucketMode() override = default;
 
 	bool activate() override;
 	void deactivate() override;

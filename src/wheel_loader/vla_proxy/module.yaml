@@ -27,8 +27,9 @@ parameters:
                   long: |
                       Baud rate for the VLA serial port.
                       Higher baud rates allow for faster data transfer.
+                      Recommended: ≥460800 for 3KB batch transmission at 20Hz.
               type: int32
-              default: 115200
+              default: 921600
               values:
                   9600: 9600 baud
                   19200: 19200 baud
@@ -37,7 +38,7 @@ parameters:
                   115200: 115200 baud
                   230400: 230400 baud
                   460800: 460800 baud
-                  921600: 921600 baud
+                  921600: 921600 baud (recommended)
                   1000000: 1000000 baud
               unit: bit/s
               reboot_required: false

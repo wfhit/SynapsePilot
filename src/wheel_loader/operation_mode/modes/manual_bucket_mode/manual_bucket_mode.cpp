@@ -31,17 +31,17 @@
  *
  ****************************************************************************/
 
-#include "wl_manual_bucket_mode.hpp"
+#include "manual_bucket_mode.hpp"
 #include <px4_platform_common/log.h>
 
-WheelLoaderManualBucketMode::WheelLoaderManualBucketMode(ModuleParams *parent) :
+ManualBucketMode::ManualBucketMode(ModuleParams *parent) :
 	OperationModeBase(parent, "WheelLoaderManualBucket")
 {
 	// Load vehicle parameters
 	loadVehicleParameters();
 }
 
-bool WheelLoaderManualBucketMode::activate()
+bool ManualBucketMode::activate()
 {
 	PX4_INFO("Activating Wheel Loader Manual Bucket Mode");
 
@@ -85,13 +85,13 @@ bool WheelLoaderManualBucketMode::activate()
 	return true;
 }
 
-void WheelLoaderManualBucketMode::deactivate()
+void ManualBucketMode::deactivate()
 {
 	PX4_INFO("Deactivating Wheel Loader Manual Bucket Mode");
 	set_active(false);
 }
 
-void WheelLoaderManualBucketMode::update(float dt)
+void ManualBucketMode::update(float dt)
 {
 	// Update sensor data
 	updateCurrentState();
@@ -123,7 +123,7 @@ void WheelLoaderManualBucketMode::update(float dt)
 	publish_control_config(config);
 }
 
-bool WheelLoaderManualBucketMode::is_valid() const
+bool ManualBucketMode::is_valid() const
 {
 	bool position_valid = _vehicle_local_position.xy_valid && _vehicle_local_position.z_valid &&
 			      (hrt_elapsed_time(&_vehicle_local_position.timestamp) < 500000);  // 500ms in microseconds
@@ -135,7 +135,7 @@ bool WheelLoaderManualBucketMode::is_valid() const
 	return position_valid && attitude_valid && rc_valid;
 }
 
-void WheelLoaderManualBucketMode::processRCInputs(float dt)
+void ManualBucketMode::processRCInputs(float dt)
 {
 	// Update RC data
 	_manual_control_setpoint_sub.update(&_manual_control_setpoint);
@@ -163,7 +163,7 @@ void WheelLoaderManualBucketMode::processRCInputs(float dt)
 		  (double)_bucket_rate_heading, (double)_bucket_rate_tilt);
 }
 
-float WheelLoaderManualBucketMode::applyDeadband(float input, float deadband)
+float ManualBucketMode::applyDeadband(float input, float deadband)
 {
 	if (fabsf(input) < deadband) {
 		return 0.0f;
@@ -174,7 +174,7 @@ float WheelLoaderManualBucketMode::applyDeadband(float input, float deadband)
 	return sign * (fabsf(input) - deadband) / (1.0f - deadband);
 }
 
-void WheelLoaderManualBucketMode::updateBucketPose(float dt)
+void ManualBucketMode::updateBucketPose(float dt)
 {
 	// Integrate velocities to get target bucket pose
 	_target_bucket_pose.x += _bucket_vel_x * dt;
@@ -186,7 +186,7 @@ void WheelLoaderManualBucketMode::updateBucketPose(float dt)
 	_target_bucket_pose.heading = matrix::wrap_pi(_target_bucket_pose.heading);
 }
 
-void WheelLoaderManualBucketMode::applyBucketLimits()
+void ManualBucketMode::applyBucketLimits()
 {
 	// Clamp bucket X position
 	_target_bucket_pose.x = math::constrain(_target_bucket_pose.x,
@@ -204,7 +204,7 @@ void WheelLoaderManualBucketMode::applyBucketLimits()
 			_vehicle_params.tilt_max);
 }
 
-bool WheelLoaderManualBucketMode::computeInverseKinematics()
+bool ManualBucketMode::computeInverseKinematics()
 {
 	// Simplified inverse kinematics
 	// Assumes bucket is at end of boom, boom pivots from chassis
@@ -270,7 +270,7 @@ bool WheelLoaderManualBucketMode::computeInverseKinematics()
 	return true;
 }
 
-void WheelLoaderManualBucketMode::publishSetpoints()
+void ManualBucketMode::publishSetpoints()
 {
 	hrt_abstime now = hrt_absolute_time();
 
@@ -327,7 +327,7 @@ void WheelLoaderManualBucketMode::publishSetpoints()
 	_tilt_setpoint_pub.publish(tilt_sp);
 }
 
-void WheelLoaderManualBucketMode::updateCurrentState()
+void ManualBucketMode::updateCurrentState()
 {
 	// Update subscriptions
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
@@ -352,7 +352,7 @@ void WheelLoaderManualBucketMode::updateCurrentState()
 	_current_bucket_pose = _target_bucket_pose;
 }
 
-void WheelLoaderManualBucketMode::loadVehicleParameters()
+void ManualBucketMode::loadVehicleParameters()
 {
 	// TODO: Load from YAML or PX4 parameters
 	// Using defaults for now
@@ -377,7 +377,7 @@ void WheelLoaderManualBucketMode::loadVehicleParameters()
 	_control_params.chassis_max_velocity = 0.3f;
 }
 
-void WheelLoaderManualBucketMode::initializeBucketPose()
+void ManualBucketMode::initializeBucketPose()
 {
 	// Initialize from current state (or default if sensors not available)
 	// TODO: Use forward kinematics from current boom/tilt to compute bucket pose

@@ -31,15 +31,15 @@
  *
  ****************************************************************************/
 
-#include "wl_safety_stop_mode.hpp"
+#include "safety_stop_mode.hpp"
 #include <px4_platform_common/log.h>
 
-WheelLoaderSafetyStopMode::WheelLoaderSafetyStopMode(ModuleParams *parent) :
+SafetyStopMode::SafetyStopMode(ModuleParams *parent) :
 	OperationModeBase(parent, "WheelLoaderSafetyStop")
 {
 }
 
-bool WheelLoaderSafetyStopMode::activate()
+bool SafetyStopMode::activate()
 {
 	PX4_WARN("Activating Wheel Loader Safety Stop Mode - IMMEDIATE STOP");
 
@@ -65,13 +65,13 @@ bool WheelLoaderSafetyStopMode::activate()
 	return true;
 }
 
-void WheelLoaderSafetyStopMode::deactivate()
+void SafetyStopMode::deactivate()
 {
 	PX4_INFO("Deactivating Wheel Loader Safety Stop Mode");
 	set_active(false);
 }
 
-void WheelLoaderSafetyStopMode::update(float dt)
+void SafetyStopMode::update(float dt)
 {
 	// Continuously publish stop setpoints
 	publishStopSetpoints();
@@ -86,14 +86,14 @@ void WheelLoaderSafetyStopMode::update(float dt)
 	publish_control_config(config);
 }
 
-bool WheelLoaderSafetyStopMode::is_valid() const
+bool SafetyStopMode::is_valid() const
 {
 	// Safety stop mode is always valid
 	// It does not depend on any sensor feedback
 	return true;
 }
 
-void WheelLoaderSafetyStopMode::publishStopSetpoints()
+void SafetyStopMode::publishStopSetpoints()
 {
 	hrt_abstime now = hrt_absolute_time();
 

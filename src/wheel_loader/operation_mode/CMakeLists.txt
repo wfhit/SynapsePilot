@@ -39,16 +39,22 @@ px4_add_module(
 	SRCS
 		operation_mode_manager.cpp
 		operation_mode_base.cpp
-		modes/wheel_loader/wl_traj_follower_mode/wl_traj_follower_mode.cpp
-		modes/wheel_loader/wl_traj_follower_mode/chassis_mpc_controller.cpp
-		modes/wheel_loader/wl_traj_follower_mode/s_curve_planner.cpp
-		modes/wheel_loader/wl_manual_bucket_mode/wl_manual_bucket_mode.cpp
-		modes/wheel_loader/wl_manual_direct_mode/wl_manual_direct_mode.cpp
-		modes/wheel_loader/wl_hold_mode/wl_hold_mode.cpp
-		modes/wheel_loader/wl_loiter_mode/wl_loiter_mode.cpp
-		modes/wheel_loader/wl_safety_stop_mode/wl_safety_stop_mode.cpp
+		modes/traj_follower_mode/traj_follower_mode.cpp
+		modes/traj_follower_mode/chassis_mpc_controller.cpp
+		modes/traj_follower_mode/s_curve_planner.cpp
+		modes/manual_bucket_mode/manual_bucket_mode.cpp
+		modes/manual_direct_mode/manual_direct_mode.cpp
+		modes/hold_mode/hold_mode.cpp
+		modes/loiter_mode/loiter_mode.cpp
+		modes/safety_stop_mode/safety_stop_mode.cpp
 	DEPENDS
 		px4_work_queue
 	MODULE_CONFIG
 		module.yaml
+		modes/traj_follower_mode/traj_follower_mode.yaml
+		modes/manual_bucket_mode/manual_bucket_mode.yaml
+		modes/manual_direct_mode/manual_direct_mode.yaml
+		modes/hold_mode/hold_mode.yaml
+		modes/loiter_mode/loiter_mode.yaml
+		modes/safety_stop_mode/safety_stop_mode.yaml
 )

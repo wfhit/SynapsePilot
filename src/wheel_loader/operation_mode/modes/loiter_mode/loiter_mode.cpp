@@ -31,16 +31,16 @@
  *
  ****************************************************************************/
 
-#include "wl_loiter_mode.hpp"
+#include "loiter_mode.hpp"
 #include <px4_platform_common/log.h>
 
-WheelLoaderLoiterMode::WheelLoaderLoiterMode(ModuleParams *parent) :
+LoiterMode::LoiterMode(ModuleParams *parent) :
 	OperationModeBase(parent, "WheelLoaderLoiter")
 {
 	loadParameters();
 }
 
-bool WheelLoaderLoiterMode::activate()
+bool LoiterMode::activate()
 {
 	PX4_INFO("Activating Wheel Loader Loiter Mode");
 
@@ -71,13 +71,13 @@ bool WheelLoaderLoiterMode::activate()
 	return true;
 }
 
-void WheelLoaderLoiterMode::deactivate()
+void LoiterMode::deactivate()
 {
 	PX4_INFO("Deactivating Wheel Loader Loiter Mode");
 	set_active(false);
 }
 
-void WheelLoaderLoiterMode::update(float dt)
+void LoiterMode::update(float dt)
 {
 	// Update sensor data (for validity checking only)
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
@@ -96,14 +96,14 @@ void WheelLoaderLoiterMode::update(float dt)
 	publish_control_config(config);
 }
 
-bool WheelLoaderLoiterMode::is_valid() const
+bool LoiterMode::is_valid() const
 {
 	// Loiter mode is always valid once activated
 	// It doesn't require active sensor feedback
 	return true;
 }
 
-void WheelLoaderLoiterMode::publishZeroSetpoints()
+void LoiterMode::publishZeroSetpoints()
 {
 	hrt_abstime now = hrt_absolute_time();
 
@@ -154,7 +154,7 @@ void WheelLoaderLoiterMode::publishZeroSetpoints()
 	PX4_DEBUG("Loiter: publishing zero velocities to all actuators");
 }
 
-void WheelLoaderLoiterMode::loadParameters()
+void LoiterMode::loadParameters()
 {
 	// TODO: Load from YAML or PX4 parameters
 	// Using defaults for now

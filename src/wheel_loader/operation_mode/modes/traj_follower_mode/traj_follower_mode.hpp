@@ -45,7 +45,7 @@
 
 #pragma once
 
-#include "../../../operation_mode_base.hpp"
+#include "../../operation_mode_base.hpp"
 #include "chassis_mpc_controller.hpp"
 #include "s_curve_planner.hpp"
 
@@ -59,11 +59,11 @@
 #include <uORB/topics/vehicle_attitude.h>
 #include <matrix/matrix/math.hpp>
 
-class WheelLoaderTrajFollowerMode : public OperationModeBase
+class TrajFollowerMode : public OperationModeBase
 {
 public:
-	WheelLoaderTrajFollowerMode(ModuleParams *parent);
-	~WheelLoaderTrajFollowerMode() override = default;
+	TrajFollowerMode(ModuleParams *parent);
+	~TrajFollowerMode() override = default;
 
 	bool activate() override;
 	void deactivate() override;

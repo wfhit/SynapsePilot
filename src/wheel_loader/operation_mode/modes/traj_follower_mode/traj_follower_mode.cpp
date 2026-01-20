@@ -31,11 +31,11 @@
  *
  ****************************************************************************/
 
-#include "wl_traj_follower_mode.hpp"
+#include "traj_follower_mode.hpp"
 #include <px4_platform_common/log.h>
 #include <mathlib/mathlib.h>
 
-WheelLoaderTrajFollowerMode::WheelLoaderTrajFollowerMode(ModuleParams *parent) :
+TrajFollowerMode::TrajFollowerMode(ModuleParams *parent) :
 	OperationModeBase(parent, "WheelLoaderTrajFollower")
 {
 	// Load vehicle parameters from YAML
@@ -54,7 +54,7 @@ WheelLoaderTrajFollowerMode::WheelLoaderTrajFollowerMode(ModuleParams *parent) :
 	_tilt_planner.setProfileType(ProfileType::QUINTIC);
 }
 
-bool WheelLoaderTrajFollowerMode::activate()
+bool TrajFollowerMode::activate()
 {
 	PX4_INFO("Activating Wheel Loader Trajectory Follower Mode");
 
@@ -86,7 +86,7 @@ bool WheelLoaderTrajFollowerMode::activate()
 	return true;
 }
 
-void WheelLoaderTrajFollowerMode::deactivate()
+void TrajFollowerMode::deactivate()
 {
 	PX4_INFO("Deactivating Wheel Loader Trajectory Follower Mode");
 
@@ -96,7 +96,7 @@ void WheelLoaderTrajFollowerMode::deactivate()
 	set_active(false);
 }
 
-void WheelLoaderTrajFollowerMode::update(float dt)
+void TrajFollowerMode::update(float dt)
 {
 	// Update subscriptions
 	updateCurrentState();
@@ -145,7 +145,7 @@ void WheelLoaderTrajFollowerMode::update(float dt)
 	publish_control_config(config);
 }
 
-bool WheelLoaderTrajFollowerMode::is_valid() const
+bool TrajFollowerMode::is_valid() const
 {
 	bool position_valid = _vehicle_local_position.xy_valid && _vehicle_local_position.z_valid &&
 			      (hrt_elapsed_time(&_vehicle_local_position.timestamp) < 500000);
@@ -155,7 +155,7 @@ bool WheelLoaderTrajFollowerMode::is_valid() const
 	return position_valid && attitude_valid;
 }
 
-void WheelLoaderTrajFollowerMode::processNewTrajectory()
+void TrajFollowerMode::processNewTrajectory()
 {
 	vla_trajectory_s traj;
 
@@ -207,7 +207,7 @@ void WheelLoaderTrajFollowerMode::processNewTrajectory()
 	PX4_INFO("Trajectory decoded and loaded: %d points", _num_decoded_points);
 }
 
-bool WheelLoaderTrajFollowerMode::decodeTrajectoryPoint(uint8_t point_index,
+bool TrajFollowerMode::decodeTrajectoryPoint(uint8_t point_index,
 		ChassisState &chassis_target, float &boom_target, float &tilt_target)
 {
 	if (point_index >= _trajectory.num_points) {
@@ -278,7 +278,7 @@ bool WheelLoaderTrajFollowerMode::decodeTrajectoryPoint(uint8_t point_index,
 	return true;
 }
 
-void WheelLoaderTrajFollowerMode::decodeEntireTrajectory()
+void TrajFollowerMode::decodeEntireTrajectory()
 {
 	_num_decoded_points = _trajectory.num_points;
 
@@ -301,7 +301,7 @@ void WheelLoaderTrajFollowerMode::decodeEntireTrajectory()
 	PX4_DEBUG("Decoded %d trajectory points", _num_decoded_points);
 }
 
-void WheelLoaderTrajFollowerMode::fuseTrajectories()
+void TrajFollowerMode::fuseTrajectories()
 {
 	if (_prev_num_points == 0) {
 		return;
@@ -331,7 +331,7 @@ void WheelLoaderTrajFollowerMode::fuseTrajectories()
 	}
 }
 
-void WheelLoaderTrajFollowerMode::transformToLocalFrame(float &x, float &y, float &heading, uint8_t frame_id)
+void TrajFollowerMode::transformToLocalFrame(float &x, float &y, float &heading, uint8_t frame_id)
 {
 	if (frame_id == vla_trajectory_s::FRAME_LOCAL) {
 		// Already in local frame
@@ -357,7 +357,7 @@ void WheelLoaderTrajFollowerMode::transformToLocalFrame(float &x, float &y, floa
 	}
 }
 
-void WheelLoaderTrajFollowerMode::updateCurrentState()
+void TrajFollowerMode::updateCurrentState()
 {
 	// Update vehicle position
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
@@ -391,7 +391,7 @@ void WheelLoaderTrajFollowerMode::updateCurrentState()
 	_current_tilt_state.acceleration = 0.f;
 }
 
-void WheelLoaderTrajFollowerMode::computeChassisControl()
+void TrajFollowerMode::computeChassisControl()
 {
 	// Get current absolute time since trajectory start
 	// uint64_t current_time = hrt_absolute_time();
@@ -402,7 +402,7 @@ void WheelLoaderTrajFollowerMode::computeChassisControl()
 	// TODO: Implement chassis MPC control computation
 }
 
-void WheelLoaderTrajFollowerMode::computeBoomControl()
+void TrajFollowerMode::computeBoomControl()
 {
 	// Get current absolute time for trajectory sampling
 	uint64_t current_time = hrt_absolute_time();
@@ -411,7 +411,7 @@ void WheelLoaderTrajFollowerMode::computeBoomControl()
 	_boom_planner.getTrajectoryPoint(current_time, _boom_setpoint);
 }
 
-void WheelLoaderTrajFollowerMode::computeTiltControl()
+void TrajFollowerMode::computeTiltControl()
 {
 	// Get current absolute time for trajectory sampling
 	uint64_t current_time = hrt_absolute_time();
@@ -420,7 +420,7 @@ void WheelLoaderTrajFollowerMode::computeTiltControl()
 	_tilt_planner.getTrajectoryPoint(current_time, _tilt_setpoint);
 }
 
-void WheelLoaderTrajFollowerMode::synchronizeControllers()
+void TrajFollowerMode::synchronizeControllers()
 {
 	// Get durations for each controller
 	_chassis_time_to_target = 1.0f;  // TODO: Estimate from MPC
@@ -450,7 +450,7 @@ void WheelLoaderTrajFollowerMode::synchronizeControllers()
 		  (double)_boom_time_to_target, (double)_tilt_time_to_target);
 }
 
-void WheelLoaderTrajFollowerMode::publishSetpoints()
+void TrajFollowerMode::publishSetpoints()
 {
 	hrt_abstime now = hrt_absolute_time();
 
@@ -493,7 +493,7 @@ void WheelLoaderTrajFollowerMode::publishSetpoints()
 	_tilt_setpoint_pub.publish(tilt_sp);
 }
 
-bool WheelLoaderTrajFollowerMode::shouldAdvanceToNextPoint()
+bool TrajFollowerMode::shouldAdvanceToNextPoint()
 {
 	if (_current_trajectory_point >= _trajectory.num_points) {
 		return false;
@@ -513,7 +513,7 @@ bool WheelLoaderTrajFollowerMode::shouldAdvanceToNextPoint()
 	return elapsed >= _synchronized_time;
 }
 
-void WheelLoaderTrajFollowerMode::loadVehicleParameters()
+void TrajFollowerMode::loadVehicleParameters()
 {
 	// TODO: Load from YAML file (vehicle_params.yaml)
 	// For now, use defaults from VehicleParams struct
@@ -551,7 +551,7 @@ void WheelLoaderTrajFollowerMode::loadVehicleParameters()
 	_tilt_limits.max_jerk = 2.0f;
 }
 
-void WheelLoaderTrajFollowerMode::setupInitialBlending()
+void TrajFollowerMode::setupInitialBlending()
 {
 	_is_blending = true;
 	_blend_start_time = hrt_absolute_time();
