@@ -1,5 +1,5 @@
 # Wheel Loader Trajectory Message
-# Contains up to 16 trajectory points for wheel loader control
+# Contains up to 32 trajectory points for wheel loader control
 
 uint64 timestamp		# time since system start (microseconds)
 
@@ -14,33 +14,33 @@ uint8 FRAME_GLOBAL = 0		# Global/world frame
 uint8 FRAME_LOCAL = 1		# Local NED frame
 uint8 FRAME_BODY = 2		# Body frame
 
-uint8 num_points		# Number of valid trajectory points (1-16)
+uint8 num_points		# Number of valid trajectory points (1-32)
 uint8 current_point_index	# Index of current target point
 
-# Trajectory points (max 16)
-uint64[16] point_timestamps	# Timestamp for each point (microseconds)
+# Trajectory points (max 32)
+uint64[32] point_timestamps	# Timestamp for each point (microseconds)
 
 # Type 0: Bucket 6DOF pose
-float32[16] bucket_x		# Bucket position x [m]
-float32[16] bucket_y		# Bucket position y [m]
-float32[16] bucket_z		# Bucket position z [m]
-float32[16] bucket_qw		# Bucket orientation quaternion w
-float32[16] bucket_qx		# Bucket orientation quaternion x
-float32[16] bucket_qy		# Bucket orientation quaternion y
-float32[16] bucket_qz		# Bucket orientation quaternion z
+float32[32] bucket_x		# Bucket position x [m]
+float32[32] bucket_y		# Bucket position y [m]
+float32[32] bucket_z		# Bucket position z [m]
+float32[32] bucket_qw		# Bucket orientation quaternion w
+float32[32] bucket_qx		# Bucket orientation quaternion x
+float32[32] bucket_qy		# Bucket orientation quaternion y
+float32[32] bucket_qz		# Bucket orientation quaternion z
 
 # Type 1 & 2: Chassis position/pose
-float32[16] chassis_x		# Chassis position x [m]
-float32[16] chassis_y		# Chassis position y [m]
-float32[16] chassis_heading	# Chassis heading [rad] (Type 2 only)
+float32[32] chassis_x		# Chassis position x [m]
+float32[32] chassis_y		# Chassis position y [m]
+float32[32] chassis_heading	# Chassis heading [rad] (Type 2 only)
 
 # Type 1 & 2: Bucket parameters
-float32[16] bucket_heading	# Bucket heading [rad] (Type 1 only)
-float32[16] bucket_altitude	# Bucket altitude/height [m]
-float32[16] bucket_tilt		# Bucket tilt angle [rad]
+float32[32] bucket_heading	# Bucket heading [rad] (Type 1 only)
+float32[32] bucket_altitude	# Bucket altitude/height [m]
+float32[32] bucket_tilt		# Bucket tilt angle [rad]
 
 # Type 1: Articulation
-float32[16] articulation_angle	# Articulated steering angle [rad] (Type 1 only)
+float32[32] articulation_angle	# Articulated steering angle [rad] (Type 1 only)
 
 # Control flags
 bool hold_last_point		# Hold position after reaching last point

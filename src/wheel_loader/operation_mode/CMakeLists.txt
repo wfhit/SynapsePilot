@@ -35,6 +35,7 @@ px4_add_module(
 	MODULE modules__operation_mode
 	MAIN operation_mode
 	COMPILE_FLAGS
+		-Wno-frame-larger-than
 	SRCS
 		operation_mode_manager.cpp
 		operation_mode_base.cpp

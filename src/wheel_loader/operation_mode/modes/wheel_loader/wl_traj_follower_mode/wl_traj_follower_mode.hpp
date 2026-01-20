@@ -167,17 +167,18 @@ private:
 	vla_trajectory_s _trajectory{};
 
 	// Decoded trajectories
-	static constexpr uint8_t MAX_TRAJ_POINTS = 16;
+	static constexpr uint8_t MAX_TRAJ_POINTS = 32;
 	ChassisState _chassis_trajectory[MAX_TRAJ_POINTS];
 	float _boom_trajectory[MAX_TRAJ_POINTS];
 	float _tilt_trajectory[MAX_TRAJ_POINTS];
 	uint64_t _trajectory_timestamps[MAX_TRAJ_POINTS];
 	uint8_t _num_decoded_points{0};
 
-	// Previous trajectory for blending
-	ChassisState _prev_chassis_trajectory[MAX_TRAJ_POINTS];
-	float _prev_boom_trajectory[MAX_TRAJ_POINTS];
-	float _prev_tilt_trajectory[MAX_TRAJ_POINTS];
+	// Previous trajectory for blending (not needed for batch processing, keep small)
+	static constexpr uint8_t MAX_PREV_POINTS = 4;
+	ChassisState _prev_chassis_trajectory[MAX_PREV_POINTS];
+	float _prev_boom_trajectory[MAX_PREV_POINTS];
+	float _prev_tilt_trajectory[MAX_PREV_POINTS];
 	uint8_t _prev_num_points{0};
 
 	// Trajectory tracking

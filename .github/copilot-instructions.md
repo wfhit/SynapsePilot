@@ -153,14 +153,18 @@ public:
      - `traction_controller`: Slip estimation & torque distribution
    
 2. **nxt-dual-wl-front**: Front control board  
-   - Runs: `tilt_control` (bucket tilt hydraulic control)
+   - Runs: `tilt_control` (bucket tilt control)
    - Drivers: H-bridge motors, quadrature encoders, magnetic encoders, limit switches
    
 3. **nxt-dual-wl-rear**: Rear control board
-   - Runs: `boom_control` (boom hydraulic control), `load_lamp_controller`, `driver_lamp_controller`
+   - Runs: `boom_control` (boom control), `load_lamp_controller`, `driver_lamp_controller`
    - Drivers: H-bridge motors, quadrature encoders, magnetic encoders, limit switches, ST3215 smart servo (steering)
 
 **Inter-board communication**: `uorb_uart_bridge` and `uorb_uart_proxy` modules serialize uORB topics over UART between boards.
+
+**Important Notes**:
+- **Drivetrain architecture**: Only **2 drivetrain components** (front and rear), NOT 4 individual wheels. Each drivetrain controls multiple wheels on that section.
+- **Actuation system**: **All-electric actuation** using H-bridge motor drivers and encoders. There are NO hydraulic systems - boom and tilt use electric motors, not hydraulic cylinders.
 
 ### Wheel Loader Custom uORB Topics
 

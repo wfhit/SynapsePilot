@@ -237,17 +237,11 @@ void VLAProxy::Run()
 		}
 	}
 
-	// Process any buffered waypoints
+	// Publish all buffered waypoints when we have a full batch or timeout
 	if (_waypoint_buffer_count > 0) {
-		VLAWaypoint &wp = _waypoint_buffer[_waypoint_buffer_tail];
-
-		// Check if waypoint time has arrived
-		if (wp.timestamp_us <= now) {
-			publish_trajectory_setpoint(wp);
-
-			// Remove from buffer
-			_waypoint_buffer_tail = (_waypoint_buffer_tail + 1) % WAYPOINT_BUFFER_SIZE;
-			_waypoint_buffer_count--;
+		// Check if first waypoint time has arrived or buffer is full
+		if (_waypoint_buffer[0].timestamp_us <= now || _waypoint_buffer_count >= WAYPOINT_BUFFER_SIZE) {
+			publish_trajectory_batch();
 		}
 	}
 
@@ -402,10 +396,10 @@ void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 {
 	status.timestamp = hrt_absolute_time();
 
-	// Get vehicle status for arming state
-	vehicle_status_s vehicle_status;
-	if (_vehicle_status_sub.copy(&vehicle_status)) {
-		status.armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) ? 1 : 0;
+	// Get arming state from actuator_armed
+	actuator_armed_s actuator_armed;
+	if (_actuator_armed_sub.copy(&actuator_armed)) {
+		status.armed = actuator_armed.armed ? 1 : 0;
 	}
 
 	// Get operation mode from operation_mode_status (authoritative source)
@@ -480,13 +474,13 @@ void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 		status.estimated_load_kg = 0.0f;
 	}
 
-	// Get drivetrain status (wheel speeds)
-	for (int i = 0; i < 4; i++) {
+	// Get drivetrain status (front and rear)
+	for (int i = 0; i < 2; i++) {
 		drivetrain_status_s drivetrain;
 		if (_drivetrain_status_subs[i].copy(&drivetrain)) {
-			status.wheel_speeds[i] = drivetrain.current_speed_rpm;
+			status.drivetrain_speeds[i] = drivetrain.current_speed_rpm;
 		} else {
-			status.wheel_speeds[i] = 0.0f;
+			status.drivetrain_speeds[i] = 0.0f;
 		}
 	}
 
@@ -549,7 +543,8 @@ bool VLAProxy::send_robot_status()
 
 bool VLAProxy::receive_trajectory_commands()
 {
-	uint8_t buffer[256];
+	// Buffer sized for 32 waypoints batch: 32 * ~80 bytes + overhead = ~3KB
+	uint8_t buffer[3072];
 
 	if (!receive_packet(buffer, sizeof(buffer), PACKET_TIMEOUT_MS)) {
 		return false;
@@ -567,37 +562,51 @@ bool VLAProxy::receive_trajectory_commands()
 		return false;
 	}
 
-	if (msg_length != sizeof(VLAWaypoint)) {
+	// Calculate number of waypoints in this batch
+	size_t num_waypoints = msg_length / sizeof(VLAWaypoint);
+	
+	if (msg_length % sizeof(VLAWaypoint) != 0) {
 		if (_param_debug_level.get() > 0) {
-			PX4_ERR("VLA waypoint size mismatch: expected %zu, got %d",
-			        sizeof(VLAWaypoint), msg_length);
+			PX4_ERR("VLA batch size invalid: %d bytes is not multiple of waypoint size %zu",
+			        msg_length, sizeof(VLAWaypoint));
 		}
 		return false;
 	}
 
-	VLAWaypoint waypoint;
-	memcpy(&waypoint, &buffer[4], sizeof(VLAWaypoint));
-
-	if (!validate_waypoint(waypoint)) {
+	if (num_waypoints > WAYPOINT_BUFFER_SIZE) {
 		if (_param_debug_level.get() > 0) {
-			PX4_WARN("VLA waypoint validation failed");
+			PX4_WARN("VLA batch too large: %zu waypoints, max %zu", num_waypoints, WAYPOINT_BUFFER_SIZE);
 		}
-		return false;
+		num_waypoints = WAYPOINT_BUFFER_SIZE;  // Truncate to buffer size
 	}
 
-	// Add to buffer if there's space
-	if (_waypoint_buffer_count < WAYPOINT_BUFFER_SIZE) {
-		_waypoint_buffer[_waypoint_buffer_head] = waypoint;
-		_waypoint_buffer_head = (_waypoint_buffer_head + 1) % WAYPOINT_BUFFER_SIZE;
-		_waypoint_buffer_count++;
+	// Clear existing buffer and load new batch
+	_waypoint_buffer_count = 0;
+
+	// Parse and validate all waypoints in the batch
+	for (size_t i = 0; i < num_waypoints; i++) {
+		VLAWaypoint waypoint;
+		memcpy(&waypoint, &buffer[4 + i * sizeof(VLAWaypoint)], sizeof(VLAWaypoint));
+
+		if (!validate_waypoint(waypoint)) {
+			if (_param_debug_level.get() > 0) {
+				PX4_WARN("VLA waypoint %zu validation failed, skipping", i);
+			}
+			continue;
+		}
+
+		_waypoint_buffer[_waypoint_buffer_count++] = waypoint;
+	}
+
+	if (_waypoint_buffer_count > 0) {
 		_vla_active = true;
 
 		if (_param_debug_level.get() > 1) {
-			PX4_INFO("VLA waypoint buffered, count: %zu", _waypoint_buffer_count);
+			PX4_INFO("VLA batch received: %zu waypoints buffered", _waypoint_buffer_count);
 		}
 	} else {
 		if (_param_debug_level.get() > 0) {
-			PX4_WARN("VLA waypoint buffer full, dropping waypoint");
+			PX4_WARN("VLA batch contained no valid waypoints");
 		}
 	}
 
@@ -640,37 +649,41 @@ bool VLAProxy::validate_waypoint(const VLAWaypoint &waypoint)
 	return true;
 }
 
-void VLAProxy::publish_trajectory_setpoint(const VLAWaypoint &waypoint)
+void VLAProxy::publish_trajectory_batch()
 {
 	vla_trajectory_s traj{};
 
 	traj.timestamp = hrt_absolute_time();
 	traj.trajectory_type = vla_trajectory_s::TRAJ_TYPE_BUCKET_6DOF;
 	traj.frame_id = vla_trajectory_s::FRAME_LOCAL;
-	traj.num_points = 1;
+	traj.num_points = math::min(_waypoint_buffer_count, static_cast<size_t>(32));  // VLA trajectory supports max 32 points
 	traj.current_point_index = 0;
 
-	// Single waypoint at index 0
-	traj.point_timestamps[0] = waypoint.timestamp_us;
-	traj.bucket_x[0] = waypoint.position[0];
-	traj.bucket_y[0] = waypoint.position[1];
-	traj.bucket_z[0] = waypoint.position[2];
+	// Fill trajectory with all buffered waypoints
+	for (size_t i = 0; i < traj.num_points; i++) {
+		const VLAWaypoint &wp = _waypoint_buffer[i];
 
-	// Convert Euler angles to quaternion
-	float roll = waypoint.orientation[0];
-	float pitch = waypoint.orientation[1];
-	float yaw = waypoint.orientation[2];
-	float cr = cosf(roll * 0.5f);
-	float sr = sinf(roll * 0.5f);
-	float cp = cosf(pitch * 0.5f);
-	float sp = sinf(pitch * 0.5f);
-	float cy = cosf(yaw * 0.5f);
-	float sy = sinf(yaw * 0.5f);
+		traj.point_timestamps[i] = wp.timestamp_us;
+		traj.bucket_x[i] = wp.position[0];
+		traj.bucket_y[i] = wp.position[1];
+		traj.bucket_z[i] = wp.position[2];
 
-	traj.bucket_qw[0] = cr * cp * cy + sr * sp * sy;
-	traj.bucket_qx[0] = sr * cp * cy - cr * sp * sy;
-	traj.bucket_qy[0] = cr * sp * cy + sr * cp * sy;
-	traj.bucket_qz[0] = cr * cp * sy - sr * sp * cy;
+		// Convert Euler angles to quaternion
+		float roll = wp.orientation[0];
+		float pitch = wp.orientation[1];
+		float yaw = wp.orientation[2];
+		float cr = cosf(roll * 0.5f);
+		float sr = sinf(roll * 0.5f);
+		float cp = cosf(pitch * 0.5f);
+		float sp = sinf(pitch * 0.5f);
+		float cy = cosf(yaw * 0.5f);
+		float sy = sinf(yaw * 0.5f);
+
+		traj.bucket_qw[i] = cr * cp * cy + sr * sp * sy;
+		traj.bucket_qx[i] = sr * cp * cy - cr * sp * sy;
+		traj.bucket_qy[i] = cr * sp * cy + sr * cp * sy;
+		traj.bucket_qz[i] = cr * cp * sy - sr * sp * cy;
+	}
 
 	// Control flags
 	traj.hold_last_point = false;
@@ -679,8 +692,12 @@ void VLAProxy::publish_trajectory_setpoint(const VLAWaypoint &waypoint)
 	_vla_trajectory_pub.publish(traj);
 
 	if (_param_debug_level.get() > 1) {
-		PX4_INFO("Published VLA trajectory setpoint");
+		PX4_INFO("Published VLA trajectory batch with %u points", traj.num_points);
 	}
+
+	// Clear buffer after publishing
+	_waypoint_buffer_count = 0;
+	_waypoint_buffer_head = 0;
 }
 
 int VLAProxy::print_status()

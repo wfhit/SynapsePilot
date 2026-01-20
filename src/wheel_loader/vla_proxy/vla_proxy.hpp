@@ -50,7 +50,7 @@
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionMultiArray.hpp>
-#include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/operation_mode_status.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -131,7 +131,7 @@ private:
 		float chassis_linear_velocity;  // forward/backward velocity [m/s]
 		float chassis_angular_velocity; // turning rate [rad/s]
 		float chassis_steering_angle;   // articulation angle [rad]
-		float wheel_speeds[4];    // individual wheel speeds [rad/s] FL,FR,RL,RR
+		float drivetrain_speeds[2];    // drivetrain speeds [rad/s] front, rear
 		float chassis_traction_mu; // friction coefficient estimate
 		uint8_t chassis_mode;     // current control mode
 		uint8_t chassis_state;    // current chassis state
@@ -158,7 +158,7 @@ private:
 	static constexpr uint8_t VLA_MSG_ACK = 0x04;       // Acknowledgment
 
 	// Helper functions
-	void publish_trajectory_setpoint(const VLAWaypoint &waypoint);
+	void publish_trajectory_batch();
 	void collect_robot_status(WheelloaderStatus &status);
 	bool validate_waypoint(const VLAWaypoint &waypoint);
 
@@ -167,16 +167,17 @@ private:
 	char _port_name[32];
 
 	// uORB topics
-	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::Subscription _actuator_armed_sub{ORB_ID(actuator_armed)};
 	uORB::Subscription _operation_mode_status_sub{ORB_ID(operation_mode_status)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
 	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
 	uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
 	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
-	uORB::SubscriptionMultiArray<drivetrain_status_s, 4> _drivetrain_status_subs{ORB_ID::drivetrain_status};
 	uORB::Subscription _steering_status_sub{ORB_ID(steering_status)};
 	uORB::Subscription _traction_status_sub{ORB_ID(traction_status)};
+	uORB::SubscriptionMultiArray<drivetrain_status_s, 2> _drivetrain_status_subs{ORB_ID::drivetrain_status};  // Front and rear
+	
 	uORB::Publication<vla_trajectory_s> _vla_trajectory_pub{ORB_ID(vla_trajectory)};
 
 	// Performance counters
@@ -192,10 +193,9 @@ private:
 	hrt_abstime _last_connection_check{0};
 
 	// Waypoint buffer (circular buffer for better performance)
-	static constexpr size_t WAYPOINT_BUFFER_SIZE = 10;
+	static constexpr size_t WAYPOINT_BUFFER_SIZE = 32;  // Match VLA trajectory max points
 	VLAWaypoint _waypoint_buffer[WAYPOINT_BUFFER_SIZE];
 	size_t _waypoint_buffer_head{0};
-	size_t _waypoint_buffer_tail{0};
 	size_t _waypoint_buffer_count{0};
 
 	// Timing constants

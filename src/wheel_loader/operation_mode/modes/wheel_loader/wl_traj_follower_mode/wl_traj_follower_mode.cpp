@@ -171,12 +171,12 @@ void WheelLoaderTrajFollowerMode::processNewTrajectory()
 		return;
 	}
 
-	// Store previous trajectory for blending
+	// Store previous trajectory for blending (only keep first few points)
 	if (_has_active_trajectory && _trajectory.smooth_transition) {
-		_prev_num_points = _num_decoded_points;
-		memcpy(_prev_chassis_trajectory, _chassis_trajectory, sizeof(_chassis_trajectory));
-		memcpy(_prev_boom_trajectory, _boom_trajectory, sizeof(_boom_trajectory));
-		memcpy(_prev_tilt_trajectory, _tilt_trajectory, sizeof(_tilt_trajectory));
+		_prev_num_points = math::min(_num_decoded_points, static_cast<uint8_t>(MAX_PREV_POINTS));
+		memcpy(_prev_chassis_trajectory, _chassis_trajectory, sizeof(ChassisState) * _prev_num_points);
+		memcpy(_prev_boom_trajectory, _boom_trajectory, sizeof(float) * _prev_num_points);
+		memcpy(_prev_tilt_trajectory, _tilt_trajectory, sizeof(float) * _prev_num_points);
 	}
 
 	// Store new trajectory

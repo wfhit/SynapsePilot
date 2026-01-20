@@ -35,7 +35,7 @@
 px4_add_module(
 	MODULE drivers__vla_proxy
 	MAIN vla_proxy
-	STACK_MAIN 2048
+	STACK_MAIN 6144
 	SRCS
 		vla_proxy.cpp
 	DEPENDS
