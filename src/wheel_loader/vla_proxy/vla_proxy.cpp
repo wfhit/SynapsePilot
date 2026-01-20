@@ -408,9 +408,9 @@ void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 		status.armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) ? 1 : 0;
 	}
 
-	// Get operation mode from mode_status (authoritative source)
-	mode_status_s mode_status;
-	if (_mode_status_sub.copy(&mode_status)) {
+	// Get operation mode from operation_mode_status (authoritative source)
+	operation_mode_status_s mode_status;
+	if (_operation_mode_status_sub.copy(&mode_status)) {
 		status.operation_mode = mode_status.current_mode;
 	}
 
@@ -480,35 +480,43 @@ void VLAProxy::collect_robot_status(WheelloaderStatus &status)
 		status.estimated_load_kg = 0.0f;
 	}
 
-	// Get chassis status
-	chassis_status_s chassis_status;
-	if (_chassis_status_sub.copy(&chassis_status)) {
-		status.chassis_linear_velocity = chassis_status.linear_velocity;
-		status.chassis_angular_velocity = chassis_status.angular_velocity;
-		status.chassis_steering_angle = chassis_status.steering_angle;
-
-		// Copy wheel speeds (4 wheels: FL, FR, RL, RR)
-		for (int i = 0; i < 4; i++) {
-			status.wheel_speeds[i] = chassis_status.wheel_speeds[i];
-		}
-
-		status.chassis_traction_mu = chassis_status.traction_mu;
-		status.chassis_mode = chassis_status.mode;
-		status.chassis_state = chassis_status.state;
-		status.chassis_health = chassis_status.health;
-	} else {
-		// Default values if chassis status unavailable
-		status.chassis_linear_velocity = 0.0f;
-		status.chassis_angular_velocity = 0.0f;
-		status.chassis_steering_angle = 0.0f;
-		for (int i = 0; i < 4; i++) {
+	// Get drivetrain status (wheel speeds)
+	for (int i = 0; i < 4; i++) {
+		drivetrain_status_s drivetrain;
+		if (_drivetrain_status_subs[i].copy(&drivetrain)) {
+			status.wheel_speeds[i] = drivetrain.current_speed_rpm;
+		} else {
 			status.wheel_speeds[i] = 0.0f;
 		}
-		status.chassis_traction_mu = 0.0f;
-		status.chassis_mode = 0;
+	}
+
+	// Get steering status
+	steering_status_s steering;
+	if (_steering_status_sub.copy(&steering)) {
+		status.chassis_steering_angle = steering.steering_angle_deg;
+		status.chassis_state = steering.control_mode;
+		status.chassis_health = steering.is_healthy ? 1 : 0;
+	} else {
+		status.chassis_steering_angle = 0.0f;
 		status.chassis_state = 0;
 		status.chassis_health = 0;
 	}
+
+	// Get traction status
+	traction_status_s traction;
+	if (_traction_status_sub.copy(&traction)) {
+		status.chassis_traction_mu = traction.overall_traction_quality;
+		status.chassis_mode = traction.intervention_level;
+	} else {
+		status.chassis_traction_mu = 0.0f;
+		status.chassis_mode = 0;
+	}
+
+	// Calculate linear velocity (already have local_pos from earlier)
+	status.chassis_linear_velocity = sqrtf(status.velocity[0] * status.velocity[0] + status.velocity[1] * status.velocity[1]);
+
+	// Chassis angular velocity is the yaw rate (already fetched earlier in angular_velocity[2])
+	status.chassis_angular_velocity = status.angular_velocity[2];
 
 	// TODO: Get battery voltage from battery_status topic
 	status.battery_voltage = 12.0f;  // Placeholder
@@ -634,26 +642,41 @@ bool VLAProxy::validate_waypoint(const VLAWaypoint &waypoint)
 
 void VLAProxy::publish_trajectory_setpoint(const VLAWaypoint &waypoint)
 {
-	vla_trajectory_setpoint_s setpoint{};
+	vla_trajectory_s traj{};
 
-	setpoint.timestamp = hrt_absolute_time();
-	setpoint.trajectory_timestamp = waypoint.timestamp_us;
+	traj.timestamp = hrt_absolute_time();
+	traj.trajectory_type = vla_trajectory_s::TRAJ_TYPE_BUCKET_6DOF;
+	traj.frame_id = vla_trajectory_s::FRAME_LOCAL;
+	traj.num_points = 1;
+	traj.current_point_index = 0;
 
-	// Position
-	for (int i = 0; i < 3; i++) {
-		setpoint.position[i] = waypoint.position[i];
-		setpoint.velocity[i] = waypoint.velocity[i];
-		setpoint.acceleration[i] = waypoint.acceleration[i];
-	}
+	// Single waypoint at index 0
+	traj.point_timestamps[0] = waypoint.timestamp_us;
+	traj.bucket_x[0] = waypoint.position[0];
+	traj.bucket_y[0] = waypoint.position[1];
+	traj.bucket_z[0] = waypoint.position[2];
 
-	// Orientation
-	for (int i = 0; i < 3; i++) {
-		setpoint.orientation[i] = waypoint.orientation[i];
-		setpoint.angular_velocity[i] = waypoint.angular_velocity[i];
-		setpoint.angular_acceleration[i] = waypoint.angular_acceleration[i];
-	}
+	// Convert Euler angles to quaternion
+	float roll = waypoint.orientation[0];
+	float pitch = waypoint.orientation[1];
+	float yaw = waypoint.orientation[2];
+	float cr = cosf(roll * 0.5f);
+	float sr = sinf(roll * 0.5f);
+	float cp = cosf(pitch * 0.5f);
+	float sp = sinf(pitch * 0.5f);
+	float cy = cosf(yaw * 0.5f);
+	float sy = sinf(yaw * 0.5f);
 
-	_vla_trajectory_pub.publish(setpoint);
+	traj.bucket_qw[0] = cr * cp * cy + sr * sp * sy;
+	traj.bucket_qx[0] = sr * cp * cy - cr * sp * sy;
+	traj.bucket_qy[0] = cr * sp * cy + sr * cp * sy;
+	traj.bucket_qz[0] = cr * cp * sy - sr * sp * cy;
+
+	// Control flags
+	traj.hold_last_point = false;
+	traj.smooth_transition = true;
+
+	_vla_trajectory_pub.publish(traj);
 
 	if (_param_debug_level.get() > 1) {
 		PX4_INFO("Published VLA trajectory setpoint");

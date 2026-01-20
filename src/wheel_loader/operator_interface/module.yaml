@@ -1,12 +1,12 @@
-module_name: Interactor Interface
+module_name: Operator Interface
 serial_config:
-    - command: interactor_interface start
+    - command: operator_interface start
       port_config_param:
           name: None
-          group: Interactor Interface
+          group: Operator Interface
 
 parameters:
-    - group: Interactor Interface
+    - group: Operator Interface
       definitions:
           CMD_REQ_DEADMAN:
               description:

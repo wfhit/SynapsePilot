@@ -36,6 +36,8 @@ px4_add_module(
 	MAIN strategy_executor
 	SRCS
 		strategy_manager.cpp
+	MODULE_CONFIG
+		module.yaml
 	DEPENDS
 		px4_work_queue
 	)

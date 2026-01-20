@@ -157,7 +157,7 @@ bool WheelLoaderTrajFollowerMode::is_valid() const
 
 void WheelLoaderTrajFollowerMode::processNewTrajectory()
 {
-	trajectory_s traj;
+	vla_trajectory_s traj;
 
 	if (!_trajectory_sub.copy(&traj)) {
 		return;
@@ -215,7 +215,7 @@ bool WheelLoaderTrajFollowerMode::decodeTrajectoryPoint(uint8_t point_index,
 	}
 
 	switch (_trajectory.trajectory_type) {
-	case trajectory_s::TRAJ_TYPE_BUCKET_6DOF: {
+	case vla_trajectory_s::TRAJ_TYPE_BUCKET_6DOF: {
 			// Type 0: Bucket 6DOF pose
 			// Need to compute inverse kinematics to get chassis/boom/tilt from bucket pose
 			// This is a simplified placeholder
@@ -242,7 +242,7 @@ bool WheelLoaderTrajFollowerMode::decodeTrajectoryPoint(uint8_t point_index,
 			break;
 		}
 
-	case trajectory_s::TRAJ_TYPE_CHASSIS_BUCKET_FULL: {
+	case vla_trajectory_s::TRAJ_TYPE_CHASSIS_BUCKET_FULL: {
 			// Type 1: Chassis position + bucket heading/altitude/tilt + articulation
 			chassis_target.x = _trajectory.chassis_x[point_index];
 			chassis_target.y = _trajectory.chassis_y[point_index];
@@ -256,7 +256,7 @@ bool WheelLoaderTrajFollowerMode::decodeTrajectoryPoint(uint8_t point_index,
 			break;
 		}
 
-	case trajectory_s::TRAJ_TYPE_CHASSIS_BUCKET_POSE: {
+	case vla_trajectory_s::TRAJ_TYPE_CHASSIS_BUCKET_POSE: {
 			// Type 2: Chassis pose + bucket altitude/tilt
 			chassis_target.x = _trajectory.chassis_x[point_index];
 			chassis_target.y = _trajectory.chassis_y[point_index];
@@ -333,11 +333,11 @@ void WheelLoaderTrajFollowerMode::fuseTrajectories()
 
 void WheelLoaderTrajFollowerMode::transformToLocalFrame(float &x, float &y, float &heading, uint8_t frame_id)
 {
-	if (frame_id == trajectory_s::FRAME_LOCAL) {
+	if (frame_id == vla_trajectory_s::FRAME_LOCAL) {
 		// Already in local frame
 		return;
 
-	} else if (frame_id == trajectory_s::FRAME_BODY) {
+	} else if (frame_id == vla_trajectory_s::FRAME_BODY) {
 		// Transform from body to local frame
 		float cos_h = cosf(_current_chassis_state.heading);
 		float sin_h = sinf(_current_chassis_state.heading);
@@ -350,7 +350,7 @@ void WheelLoaderTrajFollowerMode::transformToLocalFrame(float &x, float &y, floa
 		y = y_local;
 		heading = heading_local;
 
-	} else if (frame_id == trajectory_s::FRAME_GLOBAL) {
+	} else if (frame_id == vla_trajectory_s::FRAME_GLOBAL) {
 		// For now, treat global same as local
 		// In production, would need proper global->local transform
 		PX4_WARN("Global frame not fully implemented, treating as local");

@@ -1,0 +1,6 @@
+menuconfig WHEEL_LOADER_OPERATOR_INTERFACE
+	bool "operator_interface"
+	default n
+	---help---
+		Enable support for operator interface module
+		Provides interface for operator inputs via RC and MAVLink.

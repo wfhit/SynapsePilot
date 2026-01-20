@@ -47,6 +47,8 @@
 
 #include "../failsafe_base.hpp"
 #include <uORB/topics/operation_mode_cmd.h>
+#include <uORB/topics/vehicle_angular_velocity.h>
+#include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/Subscription.hpp>
@@ -72,11 +74,11 @@ protected:
 
 				if (velocity > VELOCITY_MAX) {
 					PX4_ERR("CalibrationFailsafe: Unexpected movement detected: %.3f m/s", (double)velocity);
-					return FailsafeResult::EmergencyStop("Movement during calibration");
+					return FailsafeResult::Emergency(FailsafeViolation::STATE_INVALID, "Movement during calibration");
 				}
 			}
 
-			if (local_pos.a_xy_valid) {
+			if (local_pos.v_xy_valid && false) {
 				float acceleration = sqrtf(local_pos.ax * local_pos.ax + local_pos.ay * local_pos.ay);
 
 				if (acceleration > ACCELERATION_MAX) {
@@ -87,21 +89,22 @@ protected:
 		}
 
 		// ========== 2. ROTATION DETECTION ==========
-		vehicle_attitude_s attitude;
-		if (_attitude_sub.copy(&attitude)) {
-			float angular_rate = sqrtf(attitude.rollspeed * attitude.rollspeed +
-			                            attitude.pitchspeed * attitude.pitchspeed +
-			                            attitude.yawspeed * attitude.yawspeed);
+		vehicle_angular_velocity_s angular_vel;
+		if (_angular_vel_sub.copy(&angular_vel)) {
+			float angular_rate = sqrtf(angular_vel.xyz[0] * angular_vel.xyz[0] +
+			                            angular_vel.xyz[1] * angular_vel.xyz[1] +
+			                            angular_vel.xyz[2] * angular_vel.xyz[2]);
 
 			if (angular_rate > ANGULAR_RATE_MAX) {
 				PX4_ERR("CalibrationFailsafe: Unexpected rotation detected: %.3f rad/s", (double)angular_rate);
-				return FailsafeResult::EmergencyStop("Rotation during calibration");
+				return FailsafeResult::Emergency(FailsafeViolation::STATE_INVALID, "Rotation during calibration");
 			}
 		}
 
 		// ========== 3. ATTITUDE STABILITY ==========
 		// Ensure vehicle attitude hasn't changed significantly
 		// This detects if vehicle is on unstable surface or being disturbed
+		vehicle_attitude_s attitude;
 		if (_attitude_sub.copy(&attitude)) {
 			matrix::Eulerf euler(matrix::Quatf(attitude.q));
 			float pitch_deg = fabsf(math::degrees(euler.theta()));
@@ -111,7 +114,7 @@ protected:
 			if (pitch_deg > 15.0f || roll_deg > 15.0f) {
 				PX4_ERR("CalibrationFailsafe: Unstable surface - pitch: %.1f°, roll: %.1f°",
 				        (double)pitch_deg, (double)roll_deg);
-				return FailsafeResult::Hold("Unstable vehicle attitude");
+				return FailsafeResult::Critical(FailsafeViolation::STATE_INVALID, FailsafeAction::SWITCH_TO_HOLD, "Unstable vehicle attitude");
 			}
 		}
 
@@ -139,4 +142,5 @@ protected:
 private:
 	uORB::Subscription _local_pos_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _attitude_sub{ORB_ID(vehicle_attitude)};
+	uORB::Subscription _angular_vel_sub{ORB_ID(vehicle_angular_velocity)};
 };

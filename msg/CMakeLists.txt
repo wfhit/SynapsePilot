@@ -279,7 +279,7 @@ set(msg_files
 	wheel_loader/TiltStatus.msg
 	wheel_loader/TractionSetpoint.msg
 	wheel_loader/TractionStatus.msg
-	wheel_loader/Trajectory.msg
+	wheel_loader/VlaTrajectory.msg
 	versioned/ActuatorMotors.msg
 	versioned/ActuatorServos.msg
 	versioned/AirspeedValidated.msg

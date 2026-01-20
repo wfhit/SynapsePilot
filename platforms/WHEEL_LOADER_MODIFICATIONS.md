@@ -293,7 +293,7 @@ The following wheel loader modules directly depend on these platform modificatio
 | `boom_control` | `/dev/ttySx` | Boom actuator serial commands |
 | `tilt_control` | `/dev/ttySx` | Tilt actuator serial commands |
 | `arm_manager` | `/dev/ttySx` | Multi-implement coordination |
-| `interactor_interface` | `/dev/ttySx` | External device communication |
+| `operator_interface` | `/dev/ttySx` | Operator input (RC/MAVLink) |
 | `articulated_chassis/*_controller` | `/dev/ttySx` | Low-level controller bridge |
 
 #### Timer/PWM Dependencies

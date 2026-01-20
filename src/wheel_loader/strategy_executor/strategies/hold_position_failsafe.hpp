@@ -47,6 +47,7 @@
 
 #include "../failsafe_base.hpp"
 #include <uORB/topics/operation_mode_cmd.h>
+#include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/Subscription.hpp>
@@ -73,13 +74,13 @@ protected:
 			// Check position validity
 			if (!local_pos.xy_valid || !local_pos.z_valid) {
 				PX4_ERR("HoldPositionFailsafe: Localization invalid during hold");
-				return FailsafeResult::EmergencyStop("Localization lost");
+				return FailsafeResult::Emergency(FailsafeViolation::SENSOR_FAILURE, "Localization lost");
 			}
 
 			// Check for stale data
 			if (now - local_pos.timestamp > LOCALIZATION_TIMEOUT) {
 				PX4_ERR("HoldPositionFailsafe: Localization timeout during hold");
-				return FailsafeResult::EmergencyStop("Localization timeout");
+				return FailsafeResult::Emergency(FailsafeViolation::HEARTBEAT_TIMEOUT, "Localization timeout");
 			}
 
 			// Check for unexpected velocity (should be near zero)
@@ -89,12 +90,12 @@ protected:
 				if (velocity > VELOCITY_CRITICAL) {
 					PX4_ERR("HoldPositionFailsafe: Unexpected velocity during hold: %.2f m/s",
 					        (double)velocity);
-					return FailsafeResult::Hold("Unexpected motion detected");
+					return FailsafeResult::Critical(FailsafeViolation::STATE_INVALID, FailsafeAction::SWITCH_TO_HOLD, "Unexpected motion detected");
 				}
 			}
 
 			// Check for unexpected acceleration (external disturbance)
-			if (local_pos.a_xy_valid) {
+			if (true) {
 				float acceleration = sqrtf(local_pos.ax * local_pos.ax + local_pos.ay * local_pos.ay);
 
 				if (acceleration > ACCELERATION_CRITICAL) {
@@ -105,16 +106,17 @@ protected:
 			}
 		} else {
 			PX4_ERR("HoldPositionFailsafe: No localization data available");
-			return FailsafeResult::EmergencyStop("Localization unavailable");
+			return FailsafeResult::Emergency(FailsafeViolation::SENSOR_FAILURE, "Localization unavailable");
 		}
 
 		// ========== 2. ATTITUDE STABILITY ==========
 		vehicle_attitude_s attitude;
-		if (_attitude_sub.copy(&attitude)) {
+		vehicle_angular_velocity_s angular_vel;
+		if (_attitude_sub.copy(&attitude) && _angular_vel_sub.copy(&angular_vel)) {
 			// Check for excessive rotation rates (should be near zero during hold)
-			float angular_rate = sqrtf(attitude.rollspeed * attitude.rollspeed +
-			                            attitude.pitchspeed * attitude.pitchspeed +
-			                            attitude.yawspeed * attitude.yawspeed);
+			float angular_rate = sqrtf(angular_vel.xyz[0] * angular_vel.xyz[0] +
+			                            angular_vel.xyz[1] * angular_vel.xyz[1] +
+			                            angular_vel.xyz[2] * angular_vel.xyz[2]);
 
 			if (angular_rate > 0.1f) {  // 0.1 rad/s threshold
 				PX4_WARN("HoldPositionFailsafe: Unexpected rotation during hold: %.2f rad/s",
@@ -130,7 +132,7 @@ protected:
 			if (pitch_deg > 30.0f || roll_deg > 30.0f) {
 				PX4_ERR("HoldPositionFailsafe: Extreme attitude - pitch: %.1f°, roll: %.1f°",
 				        (double)pitch_deg, (double)roll_deg);
-				return FailsafeResult::EmergencyStop("Vehicle tipping");
+				return FailsafeResult::Emergency(FailsafeViolation::STATE_INVALID, "Vehicle tipping");
 			}
 		}
 
@@ -155,4 +157,5 @@ protected:
 private:
 	uORB::Subscription _local_pos_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _attitude_sub{ORB_ID(vehicle_attitude)};
+	uORB::Subscription _angular_vel_sub{ORB_ID(vehicle_angular_velocity)};
 };

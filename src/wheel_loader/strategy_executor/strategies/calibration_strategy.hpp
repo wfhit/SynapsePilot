@@ -64,6 +64,7 @@
 #include <uORB/topics/operation_mode_status.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/battery_status.h>
+#include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/sensor_combined.h>
@@ -169,11 +170,11 @@ public:
 		}
 
 		// ========== 4. ROTATION CHECK ==========
-		vehicle_attitude_s attitude;
-		if (_attitude_sub.copy(&attitude)) {
-			float angular_rate = sqrtf(attitude.rollspeed * attitude.rollspeed +
-			                            attitude.pitchspeed * attitude.pitchspeed +
-			                            attitude.yawspeed * attitude.yawspeed);
+		vehicle_angular_velocity_s angular_vel;
+		if (_angular_vel_sub.copy(&angular_vel)) {
+			float angular_rate = sqrtf(angular_vel.xyz[0] * angular_vel.xyz[0] +
+			                            angular_vel.xyz[1] * angular_vel.xyz[1] +
+			                            angular_vel.xyz[2] * angular_vel.xyz[2]);
 			if (angular_rate > ANGULAR_RATE_MAX) {
 				PX4_ERR("Calibration: Vehicle rotating (%.3f rad/s)", (double)angular_rate);
 				return StrategyResult::Failure("Vehicle must be stationary");
@@ -244,14 +245,14 @@ public:
 							PX4_INFO("Calibration: Operator confirmed - starting %s calibration",
 							         get_calibration_type_name());
 							_operator_confirmed = true;
-						_current_step = STEP_CALIBRATE;
+							_current_step = STEP_CALIBRATE;
 							_cal_start_time = now;
 						}
 					}
 				}
 
 				// Timeout check
-				if (now - get_step_start() > OPERATOR_CONFIRM_TIMEOUT) {
+				if (get_step_elapsed() > OPERATOR_CONFIRM_TIMEOUT) {
 					PX4_WARN("Calibration: Operator confirmation timeout");
 					return StrategyResult::Failure("Operator confirmation timeout");
 				}
@@ -269,13 +270,12 @@ public:
 
 				// Perform calibration based on type
 				StrategyResult cal_result = perform_calibration();
-				if (!cal_result.is_success()) {
+				if (!cal_result.success) {				
 					return cal_result;
 				}
-
 				// Check if sufficient samples collected
 				if (_sample_count >= SAMPLES_TARGET) {
-					PX4_INFO("Calibration: Collected %u samples - proceeding to validation",
+					PX4_INFO("Calibration: Collected %" PRIu32 " samples - proceeding to validation",
 					         _sample_count);
 					_current_step = STEP_VALIDATE;
 				}
@@ -286,7 +286,7 @@ public:
 						PX4_WARN("Calibration: Timeout but sufficient samples - proceeding");
 						_current_step = STEP_VALIDATE;
 					} else {
-						PX4_ERR("Calibration: Timeout with insufficient samples (%u < %u)",
+						PX4_ERR("Calibration: Timeout with insufficient samples (%" PRIu32 " < %" PRIu32 ")",
 						        _sample_count, SAMPLES_MIN);
 						return StrategyResult::Failure("Calibration timeout");
 					}
@@ -298,12 +298,12 @@ public:
 			// ========== STEP: Validate calibration data ==========
 			{
 				StrategyResult val_result = validate_calibration();
-				if (val_result.is_success()) {
+				if (val_result.success) {
 					_cal_data_valid = true;
 					PX4_INFO("Calibration: Validation successful");
 					_current_step = STEP_SAVE;
 				} else {
-					PX4_ERR("Calibration: Validation failed - %s", val_result.get_message());
+				PX4_ERR("Calibration: Validation failed - %s", val_result.message);
 					// Rollback to previous calibration
 					restore_backup_calibration();
 					return val_result;
@@ -316,11 +316,11 @@ public:
 			{
 				if (_cal_data_valid) {
 					StrategyResult save_result = save_calibration();
-					if (save_result.is_success()) {
+					if (save_result.success) {
 						PX4_INFO("Calibration: Data saved successfully");
 						_current_step = STEP_COMPLETE;
 					} else {
-						PX4_ERR("Calibration: Save failed - %s", save_result.get_message());
+						PX4_ERR("Calibration: Save failed - %s", save_result.message);
 						restore_backup_calibration();
 						return save_result;
 					}
@@ -366,6 +366,7 @@ private:
 	uORB::Subscription _armed_sub{ORB_ID(actuator_armed)};
 	uORB::Subscription _battery_sub{ORB_ID(battery_status)};
 	uORB::Subscription _attitude_sub{ORB_ID(vehicle_attitude)};
+	uORB::Subscription _angular_vel_sub{ORB_ID(vehicle_angular_velocity)};
 	uORB::Subscription _local_pos_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _sensor_sub{ORB_ID(sensor_combined)};
 	uORB::Subscription _manual_control_sub{ORB_ID(manual_control_setpoint)};
@@ -436,14 +437,19 @@ private:
 			PX4_INFO("  2. Press throttle stick up to confirm");
 			PX4_INFO("  3. Turn to full left, then full right");
 			break;
-		}
-	}
 
-	/**
-	 * Check if vehicle is stationary
-	 */
-	bool check_stationary()
-	{
+	case CAL_TYPE_COUNT:
+		// Not a real calibration type, just a count marker
+		PX4_ERR("Invalid calibration type");
+		break;
+	}
+}
+
+/**
+ * Check if vehicle is stationary
+ */
+bool check_stationary()
+{
 		vehicle_local_position_s local_pos;
 		if (_local_pos_sub.copy(&local_pos) && local_pos.v_xy_valid) {
 			float velocity = sqrtf(local_pos.vx * local_pos.vx + local_pos.vy * local_pos.vy);
@@ -452,11 +458,11 @@ private:
 			}
 		}
 
-		vehicle_attitude_s attitude;
-		if (_attitude_sub.copy(&attitude)) {
-			float angular_rate = sqrtf(attitude.rollspeed * attitude.rollspeed +
-			                            attitude.pitchspeed * attitude.pitchspeed +
-			                            attitude.yawspeed * attitude.yawspeed);
+		vehicle_angular_velocity_s angular_vel;
+		if (_angular_vel_sub.copy(&angular_vel)) {
+			float angular_rate = sqrtf(angular_vel.xyz[0] * angular_vel.xyz[0] +
+			                            angular_vel.xyz[1] * angular_vel.xyz[1] +
+			                            angular_vel.xyz[2] * angular_vel.xyz[2]);
 			if (angular_rate > ANGULAR_RATE_MAX) {
 				return false;
 			}

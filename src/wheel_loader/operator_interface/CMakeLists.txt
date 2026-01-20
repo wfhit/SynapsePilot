@@ -32,11 +32,11 @@
 ############################################################################
 
 px4_add_module(
-	MODULE modules__interactor_interface
-	MAIN interactor_interface
+	MODULE modules__operator_interface
+	MAIN operator_interface
 	COMPILE_FLAGS
 	SRCS
-		interactor_interface.cpp
+		operator_interface.cpp
 	DEPENDS
 		px4_work_queue
 	MODULE_CONFIG

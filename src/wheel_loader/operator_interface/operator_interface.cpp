@@ -31,7 +31,7 @@
  *
  ****************************************************************************/
 
-#include "interactor_interface.hpp"
+#include "operator_interface.hpp"
 
 #include <mathlib/mathlib.h>
 
@@ -503,14 +503,14 @@ Receives commands from MAVLink and RC, processes and forwards them to appropriat
 
 )DESCR_STR");
 
-	PRINT_MODULE_USAGE_NAME("interactor_interface", "system");
+	PRINT_MODULE_USAGE_NAME("operator_interface", "system");
 	PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 
 	return 0;
 }
 
-extern "C" __EXPORT int interactor_interface_main(int argc, char *argv[])
+extern "C" __EXPORT int operator_interface_main(int argc, char *argv[])
 {
 	return OperatorInterface::main(argc, argv);
 }

@@ -17,14 +17,14 @@ The wheel loader system uses a distributed control architecture with four board 
 
 | Module | Description | cuav-x7plus-wl | holybro-v6xrt-wl | nxt-dual-wl-front | nxt-dual-wl-rear |
 |--------|-------------|:--------------:|:----------------:|:-----------------:|:----------------:|
-| **articulated_chassis** | Whole vehicle coordination & wheel control | ✅ | ✅ | ❌ | ❌ |
-| ├─ **drivetrain_controller** | Individual wheel speed control with PID | ✅ | ✅ | ❌ | ❌ |
-| ├─ **steering_controller** | Articulated steering angle control | ✅ | ✅ | ❌ | ❌ |
-| └─ **traction_controller** | Slip estimation & torque distribution | ✅ | ✅ | ❌ | ❌ |
+| **articulated_chassis** | Whole vehicle coordination & wheel control | ❌ | ❌ | ✅ | ✅ |
+| ├─ **drivetrain_controller** | Front & rear wheel speed control for articulated body | ❌ | ❌ | ✅ | ✅ |
+| ├─ **steering_controller** | Articulated steering angle control | ❌ | ❌ | ✅ | ✅ |
+| └─ **traction_controller** | Slip estimation & torque distribution | ❌ | ❌ | ✅ | ✅ |
 | **vla_proxy** | VLA (Vehicle Level Autonomy) interface | ✅ | ✅ | ❌ | ❌ |
 | **arm_manager** | System arming/disarming & safety | ✅ | ✅ | ❌ | ❌ |
 | **health_monitor** | System-wide health monitoring | ✅ | ✅ | ❌ | ❌ |
-| **interactor_interface** | RC/MAVLink command handling | ✅ | ✅ | ❌ | ❌ |
+| **operator_interface** | Operator input handling (RC/MAVLink) | ✅ | ✅ | ❌ | ❌ |
 | **operation_mode** | Mode management (manual/auto/etc) | ✅ | ✅ | ❌ | ❌ |
 | **strategy_executor** | High-level automation strategies | ✅ | ✅ | ❌ | ❌ |
 | **tilt_control** | Bucket tilt hydraulic control | ❌ | ❌ | ✅ | ❌ |
@@ -33,7 +33,7 @@ The wheel loader system uses a distributed control architecture with four board 
 | **driver_lamp_controller** | Operator lighting control | ❌ | ❌ | ❌ | ✅ |
 | **nav_lamp_controller** | Status/navigation lighting | ✅ | ✅ | ❌ | ❌ |
 | **uorb_uart_bridge** | Main board uORB bridge (master) | ✅ | ✅ | ❌ | ❌ |
-| **uorb_uart_proxy** | Sub-board uORB proxy (slave) | ✅ | ✅ | ✅ | ❌ |
+| **uorb_uart_proxy** | Sub-board uORB proxy (slave) | ❌ | ❌ | ✅ | ✅ |
 
 ### Wheel Loader Specific Drivers
 
@@ -43,7 +43,7 @@ The wheel loader system uses a distributed control architecture with four board 
 | **quadrature_encoder** | Quadrature encoder position feedback | ❌ | ❌ | ✅ | ✅ |
 | **limit_sensor** | Safety limit switches | ❌ | ❌ | ✅ | ✅ |
 | **mag_encoder_as5600** | AS5600 magnetic encoder | ❌ | ❌ | ✅ | ✅ |
-| **smart_servo_st3215** | ST3215 smart servo (boom) | ❌ | ❌ | ❌ | ✅ |
+| **smart_servo_st3215** | ST3215 smart servo (steering) | ❌ | ❌ | ❌ | ✅ |
 
 ### Standard PX4 Modules (Common to All)
 
@@ -56,7 +56,7 @@ The wheel loader system uses a distributed control architecture with four board 
 | **esc_battery** | ✅ | ✅ | ❌ | ❌ |
 | **events** | ✅ | ✅ | ✅ | ✅ |
 | **gyro_calibration** | ✅ | ✅ | ✅ | ✅ |
-| **gyro_fft** | ❌ | ❌ | ✅ | ✅ |
+| **gyro_fft** | ✅ | ✅ | ✅ | ✅ |
 | **landing_target_estimator** | ✅ | ✅ | ✅ | ✅ |
 | **load_mon** | ✅ | ✅ | ✅ | ✅ |
 | **local_position_estimator** | ✅ | ✅ | ✅ | ✅ |
@@ -82,7 +82,7 @@ The wheel loader system uses a distributed control architecture with four board 
 - Full sensor suite (GPS, IMUs, barometers, magnetometers)
 
 **Modules:** 
-- Coordination: articulated_chassis, vla_proxy, uorb_uart_bridge, uorb_uart_proxy
+- Coordination: vla_proxy, uorb_uart_bridge
 - Management: arm_manager, health_monitor, interactor_interface, operation_mode, strategy_executor
 - Lighting: nav_lamp_controller
 - Standard PX4: Full suite with GPS, RC, MAVLink
@@ -98,8 +98,8 @@ The wheel loader system uses a distributed control architecture with four board 
 - Full sensor suite (GPS, IMUs, barometers, magnetometers)
 
 **Modules:** 
-- Coordination: articulated_chassis, vla_proxy, uorb_uart_bridge, uorb_uart_proxy
-- Management: arm_manager, health_monitor, interactor_interface, operation_mode, strategy_executor
+- Coordination: vla_proxy, uorb_uart_bridge
+- Management: arm_manager, health_monitor, operator_interface, operation_mode, strategy_executor
 - Lighting: nav_lamp_controller
 - Standard PX4: Full suite with GPS, RC, MAVLink, Ethernet
 
@@ -115,6 +115,7 @@ The wheel loader system uses a distributed control architecture with four board 
 - BMI088 IMU, SPL06 barometer
 
 **Modules:**
+- Vehicle Control: articulated_chassis (drivetrain_controller, steering_controller, traction_controller)
 - Actuator Control: tilt_control
 - Communication: uorb_uart_proxy (receives commands from main board)
 - Drivers: hbridge, quadrature_encoder, limit_sensor, mag_encoder_as5600
@@ -130,7 +131,7 @@ The wheel loader system uses a distributed control architecture with four board 
 **Role:** Rear wheel and boom control with work lighting
 **Hardware:**
 - AS5600 magnetic encoder (boom position)
-- ST3215 smart servo (boom actuation)
+- ST3215 smart servo (steering actuation)
 - Quadrature encoder (rear wheel position)
 - H-bridge motor drivers
 - Load lamps (work area lighting)
@@ -139,13 +140,15 @@ The wheel loader system uses a distributed control architecture with four board 
 - BMI088 IMU, SPL06 barometer
 
 **Modules:**
+- Vehicle Control: articulated_chassis (drivetrain_controller, steering_controller, traction_controller)
 - Actuator Control: boom_control, load_lamp_controller, driver_lamp_controller
+- Communication: uorb_uart_proxy (receives commands from main board)
 - Drivers: hbridge, quadrature_encoder, limit_sensor, mag_encoder_as5600, smart_servo_st3215
 - Standard PX4: Minimal set (attitude, sensors, logging)
 
 **Communications:** 
-- Receives commands via MAVLink or direct uORB subscriptions
-- Publishes sensor/actuator status
+- Receives commands via uORB UART from main board
+- Publishes sensor/actuator status back to main board
 
 ---
 
@@ -156,10 +159,10 @@ The wheel loader system uses a distributed control architecture with four board 
 │                   Main Controller Board                      │
 │            (CUAV X7Plus-WL / Holybro V6XRT-WL)              │
 │                                                               │
-│  Modules: articulated_chassis, vla_proxy, arm_manager,      │
-│           health_monitor, interactor_interface,              │
-│           operation_mode, strategy_executor,                 │
-│           nav_lamp_controller, uorb_uart_bridge              │
+│  Modules: vla_proxy, arm_manager, health_monitor,           │
+│           operator_interface, operation_mode,                │
+│           strategy_executor, nav_lamp_controller,            │
+│           uorb_uart_bridge                                   │
 │                                                               │
 │  Inputs: GPS, RC, MAVLink, CAN, Ethernet                    │
 └───────────────┬─────────────────────────────┬───────────────┘
@@ -171,10 +174,14 @@ The wheel loader system uses a distributed control architecture with four board 
     │  (Front Actuator)       │   │  (Rear Actuator)        │
     │                         │   │                          │
     │  Modules:               │   │  Modules:                │
+    │  - articulated_chassis  │   │  - articulated_chassis   │
     │  - tilt_control         │   │  - boom_control          │
     │  - uorb_uart_proxy      │   │  - load_lamp_controller  │
     │                         │   │  - driver_lamp_controller│
-    │  Drivers:               │   │                          │
+    │  Drivers:               │   │  - uorb_uart_proxy       │
+    │  - hbridge              │   │                          │
+    │  - quadrature_encoder   │   │  Drivers:                │
+    │  - limit_sensor         │   │  - hbridge               │
     │  - hbridge              │   │  Drivers:                │
     │  - quadrature_encoder   │   │  - hbridge               │
     │  - limit_sensor         │   │  - quadrature_encoder    │
@@ -196,7 +203,7 @@ The wheel loader system uses a distributed control architecture with four board 
 ### System Management (Main Boards Only)
 - **arm_manager** - Requires: health_monitor_status, operation_mode_status
 - **health_monitor** - Publishes: health_monitor_status
-- **interactor_interface** - Requires: RC input, MAVLink
+- **operator_interface** - Requires: RC input, MAVLink
 - **operation_mode** - Publishes: operation_mode_status
 - **strategy_executor** - Requires: health_monitor, operation_mode
 
@@ -207,7 +214,7 @@ The wheel loader system uses a distributed control architecture with four board 
 
 ### Actuator Control
 - **tilt_control** - Requires: mag_encoder_as5600, quadrature_encoder, hbridge, limit_sensor
-- **boom_control** - Requires: mag_encoder_as5600, smart_servo_st3215, limit_sensor
+- **boom_control** - Requires: mag_encoder_as5600, limit_sensor
 
 ---
 
@@ -249,7 +256,7 @@ Individual module Kconfig files:
 - `src/wheel_loader/tilt_control/Kconfig`
 - `src/wheel_loader/arm_manager/Kconfig`
 - `src/wheel_loader/health_monitor/Kconfig`
-- `src/wheel_loader/interactor_interface/Kconfig`
+- `src/wheel_loader/operator_interface/Kconfig`
 - `src/wheel_loader/operation_mode/Kconfig`
 - `src/wheel_loader/strategy_executor/Kconfig`
 - `src/wheel_loader/load_lamp_controller/Kconfig`

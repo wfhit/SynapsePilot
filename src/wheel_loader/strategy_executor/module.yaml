@@ -3,3 +3,40 @@ serial_config:
     - command: strategy_executor start
       port_config_param:
           name: None
+          group: Strategy Executor
+
+parameters:
+    - group: Strategy Executor
+      definitions:
+          SE_BATT_WARN:
+              description:
+                  short: Battery warning threshold
+                  long: Battery level (0-1) at which warnings are issued
+              type: float
+              default: 0.3
+              min: 0.0
+              max: 1.0
+              decimal: 2
+          SE_BATT_CRIT:
+              description:
+                  short: Battery critical threshold
+                  long: Battery level (0-1) at which critical actions are taken
+              type: float
+              default: 0.15
+              min: 0.0
+              max: 1.0
+              decimal: 2
+          SE_MAX_RUNTIME:
+              description:
+                  short: Maximum runtime
+                  long: Maximum strategy runtime in seconds (0 = unlimited)
+              type: int32
+              default: 0
+              min: 0
+              max: 86400
+          SE_AUTO_RECOVERY:
+              description:
+                  short: Enable auto-recovery
+                  long: Automatically attempt recovery from faults
+              type: boolean
+              default: true

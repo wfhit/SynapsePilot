@@ -67,7 +67,7 @@ protected:
 			if (now - manual_control.timestamp > 2000000) {  // 2 seconds in microseconds
 				PX4_ERR("ManualBucketFailsafe: Control input timeout - data stale for %.1fs",
 				        (double)((now - manual_control.timestamp) / 1e6));
-				return FailsafeResult::EmergencyStop("Control input lost");
+				return FailsafeResult::Emergency(FailsafeViolation::HEARTBEAT_TIMEOUT, "Control input lost");
 			}
 
 			// Validate control values are within bounds
@@ -75,7 +75,7 @@ protected:
 			    !PX4_ISFINITE(manual_control.pitch) ||
 			    !PX4_ISFINITE(manual_control.throttle)) {
 				PX4_ERR("ManualBucketFailsafe: Invalid control values detected");
-				return FailsafeResult::EmergencyStop("Invalid control input");
+				return FailsafeResult::Emergency(FailsafeViolation::STATE_INVALID, "Invalid control input");
 			}
 		}
 

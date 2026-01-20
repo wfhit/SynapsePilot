@@ -4,6 +4,7 @@ px4_add_module(
     SRCS
         traction_controller.cpp
         traction_controller.hpp
+        traction_controller_main.cpp
     MODULE_CONFIG
         module.yaml
     DEPENDS

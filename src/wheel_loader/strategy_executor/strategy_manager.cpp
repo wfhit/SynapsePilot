@@ -36,6 +36,9 @@
 // Include strategy implementations here
 #include "strategies/trajectory_follower_strategy.hpp"
 #include "strategies/manual_bucket_strategy.hpp"
+#include "strategies/manual_direct_strategy.hpp"
+#include "strategies/calibration_strategy.hpp"
+#include "strategies/hold_position_strategy.hpp"
 
 StrategyExecutor::StrategyExecutor() :
 	ModuleParams(nullptr),
@@ -581,7 +584,7 @@ int StrategyExecutor::print_status()
 
 	// Statistics
 	PX4_INFO("\n----- Strategy Statistics -----");
-	PX4_INFO("Total switches: %u", _total_strategy_switches);
+	PX4_INFO("Total switches: %" PRIu32 "", _total_strategy_switches);
 
 	for (size_t i = 0; i < _num_strategies; i++) {
 		if (_strategies[i] != nullptr) {
@@ -590,8 +593,8 @@ int StrategyExecutor::print_status()
 
 			if (stats.activation_count > 0) {
 				PX4_INFO("\nStrategy %u (%s):", id, _strategies[i]->get_name());
-				PX4_INFO("  Activations: %u", stats.activation_count);
-				PX4_INFO("  Success: %u, Failures: %u, Preemptions: %u",
+				PX4_INFO("  Activations: %" PRIu32 "", stats.activation_count);
+				PX4_INFO("  Success: %" PRIu32 ", Failures: %" PRIu32 ", Preemptions: %" PRIu32 "",
 					 stats.success_count, stats.failure_count, stats.preemption_count);
 
 				if (stats.success_count > 0) {

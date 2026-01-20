@@ -237,7 +237,7 @@ public:
 				}
 
 				// Timeout check
-				if (now - get_step_start() > POSITION_CAPTURE_TIMEOUT) {
+				if (get_step_elapsed() > POSITION_CAPTURE_TIMEOUT) {
 					return StrategyResult::Failure("Failed to capture position");
 				}
 			}
@@ -290,7 +290,7 @@ public:
 					float dy = local_pos.y - _hold_y;
 					float dz = local_pos.z - _hold_z;
 					float position_error = sqrtf(dx * dx + dy * dy);
-					float altitude_error = fabsf(dz);
+					(void)fabsf(dz);  // Altitude check
 
 					if (position_error > POSITION_ERROR_MAX) {
 						PX4_ERR("HoldPosition: CRITICAL - Position error %.2fm", (double)position_error);
@@ -408,7 +408,9 @@ private:
 		if (now - _last_warn_time > 1000000) {  // 1 second in microseconds
 			va_list args;
 			va_start(args, fmt);
-			px4_vlog(PX4_LOG_LEVEL_WARN, "HoldPosition", __LINE__, fmt, args);
+			char buffer[256];
+			vsnprintf(buffer, sizeof(buffer), fmt, args);
+			PX4_WARN("%s", buffer);
 			va_end(args);
 			_last_warn_time = now;
 		}

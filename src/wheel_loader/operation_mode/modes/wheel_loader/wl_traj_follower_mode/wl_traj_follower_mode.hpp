@@ -51,7 +51,7 @@
 
 #include <uORB/Subscription.hpp>
 #include <uORB/Publication.hpp>
-#include <uORB/topics/trajectory.h>
+#include <uORB/topics/vla_trajectory.h>
 #include <uORB/topics/chassis_setpoint.h>
 #include <uORB/topics/boom_setpoint.h>
 #include <uORB/topics/tilt_setpoint.h>
@@ -143,7 +143,7 @@ private:
 	void setupInitialBlending();
 
 	// Subscriptions
-	uORB::Subscription _trajectory_sub{ORB_ID(trajectory)};
+	uORB::Subscription _trajectory_sub{ORB_ID(vla_trajectory)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
 
@@ -164,7 +164,7 @@ private:
 
 	vehicle_local_position_s _vehicle_local_position{};
 	vehicle_attitude_s _vehicle_attitude{};
-	trajectory_s _trajectory{};
+	vla_trajectory_s _trajectory{};
 
 	// Decoded trajectories
 	static constexpr uint8_t MAX_TRAJ_POINTS = 16;

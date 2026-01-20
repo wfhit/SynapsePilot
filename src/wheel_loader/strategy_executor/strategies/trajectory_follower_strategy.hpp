@@ -61,6 +61,8 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/sensor_combined.h>
+#include <uORB/topics/traction_status.h>
+#include <uORB/topics/vla_trajectory.h>
 #include <uORB/Subscription.hpp>
 #include <lib/mathlib/mathlib.h>
 
@@ -97,6 +99,11 @@ public:
 	// Slip detection (percentage 0.0-1.0)
 	static constexpr float SLIP_CRITICAL = 0.50f;          // 50% emergency stop
 	static constexpr float SLIP_DEGRADED = 0.30f;          // 30% degraded mode
+
+	// Path deviation limits (meters)
+	static constexpr float PATH_DEVIATION_CRITICAL = 2.0f;  // 2m emergency stop
+	static constexpr float PATH_DEVIATION_DEGRADED = 1.0f;  // 1m degraded mode
+	static constexpr float PATH_DEVIATION_WARN = 0.5f;      // 0.5m warning
 	static constexpr float SLIP_WARN = 0.20f;              // 20% warning
 
 	// Path deviation limits (meters)
@@ -191,7 +198,7 @@ public:
 	StrategyResult init() override
 	{
 		// Switch to trajectory following operation mode
-		command_mode(operation_mode_cmd_s::MODE_WL_TRAJECTORY, 100);
+		command_mode(operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER, 100);
 
 		// Reset degraded state
 		_is_degraded = false;
@@ -213,7 +220,7 @@ public:
 				operation_mode_status_s mode_status;
 
 				if (_mode_status_sub.copy(&mode_status)) {
-					if (mode_status.current_mode == operation_mode_cmd_s::MODE_WL_TRAJECTORY) {
+					if (mode_status.current_mode == operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER) {
 						PX4_INFO("TrajectoryFollower: Mode activated - starting trajectory execution");
 					_current_step = STEP_FOLLOWING;
 					_trajectory_start_time = get_step_elapsed();
@@ -228,7 +235,7 @@ public:
 			// Verify mode is still active
 			operation_mode_status_s mode_status;
 			if (_mode_status_sub.copy(&mode_status)) {
-				if (mode_status.current_mode != operation_mode_cmd_s::MODE_WL_TRAJECTORY) {
+				if (mode_status.current_mode != operation_mode_cmd_s::MODE_WL_TRAJ_FOLLOWER) {
 					return StrategyResult::Failure("Trajectory mode lost");
 				}
 			}
@@ -282,46 +289,82 @@ public:
 					PX4_ERR("TrajectoryFollower: Localization timeout");
 					return StrategyResult::Failure("Localization timeout");
 				}
+		}
 
-				// Calculate slip (velocity error between commanded and actual)
-				// TODO: Get commanded velocity from trajectory controller
-				// For now, check for abnormal velocity variance
-				float vel_variance = local_pos.vxy_max;
-				float slip_estimate = 0.0f;  // TODO: Implement proper slip calculation
+		// --- Slip detection from traction control ---
+		traction_status_s traction;
+		if (_traction_sub.copy(&traction)) {
+			// Calculate maximum slip across all wheels
+			float max_slip = 0.0f;
+			for (int i = 0; i < 4; i++) {
+				if (traction.wheel_slip_ratios[i] > max_slip) {
+					max_slip = traction.wheel_slip_ratios[i];
+				}
+			}
 
-				if (slip_estimate > SLIP_CRITICAL) {
-					PX4_ERR("TrajectoryFollower: CRITICAL - Slip %.1f%%", (double)(slip_estimate * 100.0f));
-					return StrategyResult::Failure("Excessive wheel slip");
-				} else if (slip_estimate > SLIP_DEGRADED) {
-					PX4_WARN("TrajectoryFollower: High slip %.1f%% - degraded mode", (double)(slip_estimate * 100.0f));
+			// Use maximum slip as the slip estimate
+			float slip_estimate = max_slip;
+
+			// Check slip thresholds
+			if (slip_estimate > SLIP_CRITICAL) {
+				PX4_ERR("TrajectoryFollower: CRITICAL - Slip %.1f%%", (double)(slip_estimate * 100.0f));
+				return StrategyResult::Failure("Excessive wheel slip");
+			} else if (slip_estimate > SLIP_DEGRADED) {
+				PX4_WARN("TrajectoryFollower: High slip %.1f%% - degraded mode", (double)(slip_estimate * 100.0f));
+				degraded_condition = true;
+			} else if (slip_estimate > SLIP_WARN) {
+				warn_throttled(now, "Slip warning: %.1f%%", (double)(slip_estimate * 100.0f));
+			}
+
+			// Also check overall traction quality
+			if (traction.overall_traction_quality < 0.3f) {
+				PX4_WARN("TrajectoryFollower: Poor traction quality: %.1f%%",
+				         (double)(traction.overall_traction_quality * 100.0f));
+				degraded_condition = true;
+			}
+		}
+
+		// --- Path deviation check ---
+		static vla_trajectory_s traj;
+		if (_trajectory_sub.copy(&traj) && traj.num_points > 0) {
+			// Get current target point index
+			uint8_t target_idx = traj.current_point_index;
+			if (target_idx < traj.num_points) {
+				// Calculate deviation based on trajectory type
+				float deviation = 0.0f;
+				
+				if (traj.trajectory_type == vla_trajectory_s::TRAJ_TYPE_CHASSIS_BUCKET_FULL ||
+				    traj.trajectory_type == vla_trajectory_s::TRAJ_TYPE_CHASSIS_BUCKET_POSE) {
+					// For chassis-based trajectories, check chassis position deviation
+					float dx = local_pos.x - traj.chassis_x[target_idx];
+					float dy = local_pos.y - traj.chassis_y[target_idx];
+					deviation = sqrtf(dx * dx + dy * dy);
+				}
+				// For BUCKET_6DOF type, we'd need bucket position feedback (not available here)
+				
+				// Check deviation thresholds
+				if (deviation > PATH_DEVIATION_CRITICAL) {
+					PX4_ERR("TrajectoryFollower: CRITICAL - Path deviation %.2fm", (double)deviation);
+					return StrategyResult::Failure("Excessive path deviation");
+				} else if (deviation > PATH_DEVIATION_DEGRADED) {
+					PX4_WARN("TrajectoryFollower: High path deviation %.2fm - degraded mode", (double)deviation);
 					degraded_condition = true;
-				} else if (slip_estimate > SLIP_WARN) {
-					warn_throttled(now, "Slip warning: %.1f%%", (double)(slip_estimate * 100.0f));
-				}
-
-				// TODO: Path deviation check - compare position to trajectory path
-				// float deviation = calculate_path_deviation(local_pos);
-			}
-
-			// --- Sensor health ---
-			sensor_combined_s sensors;
-			if (_sensor_sub.copy(&sensors)) {
-				if (now - sensors.timestamp > SENSOR_TIMEOUT) {
-					PX4_ERR("TrajectoryFollower: Sensor timeout");
-					return StrategyResult::Failure("Sensor data lost");
+				} else if (deviation > PATH_DEVIATION_WARN) {
+					warn_throttled(now, "Path deviation warning: %.2fm", (double)deviation);
 				}
 			}
+		}
 
-			// --- Apply degraded mode if needed ---
-			if (degraded_condition && !_is_degraded) {
-				_is_degraded = true;
-				PX4_WARN("TrajectoryFollower: Entering DEGRADED mode - reduced speed");
-				// TODO: Command reduced speed to trajectory controller
-			} else if (!degraded_condition && _is_degraded) {
-				_is_degraded = false;
-				PX4_INFO("TrajectoryFollower: Exiting DEGRADED mode - normal speed");
-				// TODO: Command normal speed to trajectory controller
-			}
+		// --- Degraded mode management ---
+		if (degraded_condition && !_is_degraded) {
+			_is_degraded = true;
+			PX4_WARN("TrajectoryFollower: Entering DEGRADED mode - reduced speed");
+			// TODO: Command reduced speed to trajectory controller
+		} else if (!degraded_condition && _is_degraded) {
+			_is_degraded = false;
+			PX4_INFO("TrajectoryFollower: Exiting DEGRADED mode - normal speed");
+			// TODO: Command normal speed to trajectory controller
+		}
 
 			// --- Check for trajectory completion ---
 			if (check_trajectory_complete(now)) {
@@ -335,7 +378,7 @@ public:
 			// ========== STEP: Hold position after trajectory completion ==========
 			{
 				// Command hold mode on first entry to this step
-				if (now - get_step_start() < 100000) {
+				if (get_step_elapsed() < 100000) {
 					command_mode(operation_mode_cmd_s::MODE_WL_HOLD, 100);
 					PX4_INFO("TrajectoryFollower: Commanding hold mode after trajectory completion");
 				}
@@ -412,6 +455,8 @@ private:
 	uORB::Subscription _status_sub{ORB_ID(vehicle_status)};
 	uORB::Subscription _local_pos_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _sensor_sub{ORB_ID(sensor_combined)};
+	uORB::Subscription _traction_sub{ORB_ID(traction_status)};
+	uORB::Subscription _trajectory_sub{ORB_ID(vla_trajectory)};
 
 	// State tracking
 	bool _is_degraded{false};
@@ -431,14 +476,25 @@ private:
 	{
 		(void)now;  // Unused parameter
 
-		// Check operation mode status for trajectory completion
-		operation_mode_status_s mode_status;
-		if (_mode_status_sub.copy(&mode_status)) {
-			// Check if mode signals trajectory is complete
-			// TODO: Define trajectory_complete flag in operation_mode_status message
-			if (mode_status.trajectory_complete) {
-				PX4_INFO("TrajectoryFollower: Mode reports trajectory complete");
-				return true;
+		// Check if trajectory has reached the last point
+		static vla_trajectory_s traj;
+		if (_trajectory_sub.copy(&traj) && traj.num_points > 0) {
+			// If current point index is at or beyond last point, trajectory is complete
+			if (traj.current_point_index >= traj.num_points - 1) {
+				// Also check if we're close to the final point (position-based check)
+				vehicle_local_position_s local_pos;
+				if (_local_pos_sub.copy(&local_pos)) {
+					uint8_t last_idx = traj.num_points - 1;
+					float dx = local_pos.x - traj.chassis_x[last_idx];
+					float dy = local_pos.y - traj.chassis_y[last_idx];
+					float distance = sqrtf(dx * dx + dy * dy);
+					
+					// Consider complete if within 0.5m of final point
+					if (distance < 0.5f) {
+						PX4_INFO("TrajectoryFollower: Reached final point - trajectory complete");
+						return true;
+					}
+				}
 			}
 		}
 
@@ -453,7 +509,10 @@ private:
 		if (now - _last_warn_time > 1000000) {  // 1 second in microseconds
 			va_list args;
 			va_start(args, fmt);
-			px4_vlog(PX4_LOG_LEVEL_WARN, "TrajectoryFollower", __LINE__, fmt, args);
+			// Use PX4 warning with variable args
+			char buffer[256];
+			vsnprintf(buffer, sizeof(buffer), fmt, args);
+			PX4_WARN("%s", buffer);
 			va_end(args);
 			_last_warn_time = now;
 		}

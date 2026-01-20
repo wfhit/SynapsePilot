@@ -400,7 +400,9 @@ private:
 		if (now - _last_warn_time > 1000000) {  // 1 second in microseconds
 			va_list args;
 			va_start(args, fmt);
-			px4_vlog(PX4_LOG_LEVEL_WARN, "ManualDirect", __LINE__, fmt, args);
+			char buffer[256];
+			vsnprintf(buffer, sizeof(buffer), fmt, args);
+			PX4_WARN("%s", buffer);
 			va_end(args);
 			_last_warn_time = now;
 		}

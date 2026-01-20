@@ -13,6 +13,7 @@ uint8 MODE_WL_MANUAL_DIRECT = 2	# Wheel loader manual direct control mode
 uint8 MODE_WL_HOLD = 3		# Wheel loader hold mode
 uint8 MODE_WL_LOITER = 4	# Wheel loader loiter mode
 uint8 MODE_WL_SAFETY_STOP = 5	# Wheel loader safety stop mode
+uint8 MODE_WL_CALIBRATION = 10	# Wheel loader calibration mode
 
 # Mode source definitions
 uint8 SOURCE_INTERNAL = 0	# Internal mode logic

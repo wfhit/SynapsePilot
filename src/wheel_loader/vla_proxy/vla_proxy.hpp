@@ -49,15 +49,18 @@
 
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionMultiArray.hpp>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/operation_mode_status.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/boom_status.h>
 #include <uORB/topics/bucket_status.h>
-// #include <uORB/topics/chassis_status.h>  // Message not yet defined
-// #include <uORB/topics/vla_trajectory_setpoint.h>  // Message not yet defined
-// #include <uORB/topics/mode_status.h>  // Message not yet defined
+#include <uORB/topics/drivetrain_status.h>
+#include <uORB/topics/steering_status.h>
+#include <uORB/topics/traction_status.h>
+#include <uORB/topics/vla_trajectory.h>
 
 #include <termios.h>
 #include <fcntl.h>
@@ -165,14 +168,16 @@ private:
 
 	// uORB topics
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
-	// uORB::Subscription _mode_status_sub{ORB_ID(mode_status)};
+	uORB::Subscription _operation_mode_status_sub{ORB_ID(operation_mode_status)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
 	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};
 	uORB::Subscription _boom_status_sub{ORB_ID(boom_status)};
 	uORB::Subscription _bucket_status_sub{ORB_ID(bucket_status)};
-	uORB::Subscription _chassis_status_sub{ORB_ID(chassis_status)};
-	// uORB::Publication<vla_trajectory_setpoint_s> _vla_trajectory_pub{ORB_ID(vla_trajectory_setpoint)};
+	uORB::SubscriptionMultiArray<drivetrain_status_s, 4> _drivetrain_status_subs{ORB_ID::drivetrain_status};
+	uORB::Subscription _steering_status_sub{ORB_ID(steering_status)};
+	uORB::Subscription _traction_status_sub{ORB_ID(traction_status)};
+	uORB::Publication<vla_trajectory_s> _vla_trajectory_pub{ORB_ID(vla_trajectory)};
 
 	// Performance counters
 	perf_counter_t _loop_perf;
